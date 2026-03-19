@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Base Football — Live Matches</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+.match-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:20px;margin-bottom:14px;transition:all .2s;animation:fadeUp .4s ease both;}
+.match-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.match-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.match-league-tag{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 10px;
+  border-radius:99px;background:rgba(0,82,255,.1);color:var(--blue);border:1px solid rgba(0,82,255,.25);}
+.match-teams-row{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px;}
+.team-name{font-family:'DM Sans',sans-serif;font-size:16px;font-weight:600;color:var(--text);flex:1;}
+.team-name.away{text-align:right;}
+.score-box{text-align:center;min-width:90px;}
+.score-val{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:3px;color:var(--text);}
+.score-time{font-size:11px;color:var(--muted);margin-top:2px;}
+.kickoff-time{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--gold);margin-top:2px;}
+
+/* PREDICTION BUTTONS */
+.predict-row{display:flex;gap:8px;padding-top:16px;border-top:1px solid var(--border);}
+.pred-btn{flex:1;padding:11px 8px;border-radius:10px;border:1px solid var(--border);
+  background:none;cursor:pointer;transition:all .2s;text-align:center;}
+.pred-btn:hover{border-color:var(--blue);background:rgba(0,82,255,.06);}
+.pred-btn.home-sel{border-color:var(--green);background:rgba(0,230,118,.08);}
+.pred-btn.draw-sel{border-color:var(--gold);background:rgba(255,209,102,.08);}
+.pred-btn.away-sel{border-color:var(--accent);background:rgba(0,212,255,.08);}
+.pred-btn.confirmed{opacity:.7;cursor:default;}
+.pred-label{font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;color:var(--text);}
+.pred-pct{font-size:10px;color:var(--muted);margin-top:3px;font-family:'JetBrains Mono',monospace;}
+.pred-pts{font-size:10px;color:var(--gold);margin-top:2px;}
+.match-footer{display:flex;align-items:center;justify-content:space-between;
+  margin-top:12px;font-size:11px;color:var(--muted);}
+
+/* PREDICT MODAL */
+.predict-match-banner{background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:16px;margin-bottom:18px;text-align:center;}
+.predict-match-teams{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--text);}
+.predict-match-info{font-size:11px;color:var(--muted);margin-top:4px;}
+.predict-options{display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.pred-option{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border:1px solid var(--border);border-radius:12px;cursor:pointer;transition:all .2s;}
+.pred-option:hover,.pred-option.sel{border-color:var(--blue);background:rgba(0,82,255,.06);}
+.pred-option-left{display:flex;flex-direction:column;}
+.pred-option-label{font-size:14px;font-weight:600;color:var(--text);}
+.pred-option-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.pred-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  display:grid;place-items:center;transition:all .2s;}
+.pred-option.sel .pred-check{background:var(--blue);border-color:var(--blue);color:#fff;font-size:11px;}
+</style>
+</head>
+<body>
+<div class="shell no-right">
+
+<nav class="topnav">
+  <a class="logo" href="index.html"><div class="logo-icon">⚽</div>BASE <span>FOOTBALL</span></a>
+  <div class="nav-search">
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search matches, teams…"/>
+  </div>
+  <div class="nav-right">
+    <span class="net-badge" id="net-badge"><span class="net-dot"></span>Base Mainnet</span>
+    <button class="btn-wallet" id="wallet-btn" onclick="openWalletModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <span id="wallet-text">Connect Wallet</span>
+    </button>
+  </div>
+</nav>
+
+<aside class="sidebar-l" id="sidebar-nav"></aside>
+
+<main class="page">
+  <div class="page-header">
+    <div class="page-title">Matches & Predictions</div>
+    <div class="page-sub">Predict match outcomes on Base Mainnet and climb the leaderboard</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">12</div><div class="stat-lbl">Live Now</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">20</div><div class="stat-lbl">Upcoming</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">4,821</div><div class="stat-lbl">Predictions Today</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent)">+3 pts</div><div class="stat-lbl">Per Correct Pick</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="setTab(this,'upcoming')">Upcoming</div>
+    <div class="tab" onclick="setTab(this,'live')">🔴 Live</div>
+    <div class="tab" onclick="setTab(this,'completed')">Results</div>
+  </div>
+
+  <div id="matches-container"></div>
+</main>
+
+</div>
+
+<!-- PREDICT MODAL -->
+<div class="overlay" id="predict-modal" onclick="overlayClose(event,'predict-modal')">
+  <div class="modal">
+    <div class="modal-title">Make Prediction ⚽</div>
+    <div class="predict-match-banner">
+      <div class="predict-match-teams" id="pm-teams">Arsenal vs Liverpool</div>
+      <div class="predict-match-info" id="pm-info">Premier League · Today 12:30</div>
+    </div>
+    <div class="predict-options">
+      <div class="pred-option" id="po-home" onclick="selectPred('home')">
+        <div class="pred-option-left">
+          <div class="pred-option-label" id="po-home-label">Home Win</div>
+          <div class="pred-option-sub" id="po-home-pct">— % of fans predict this</div>
+        </div>
+        <div class="pred-check" id="pc-home"></div>
+      </div>
+      <div class="pred-option" id="po-draw" onclick="selectPred('draw')">
+        <div class="pred-option-left">
+          <div class="pred-option-label">Draw</div>
+          <div class="pred-option-sub" id="po-draw-pct">— % of fans predict this</div>
+        </div>
+        <div class="pred-check" id="pc-draw"></div>
+      </div>
+      <div class="pred-option" id="po-away" onclick="selectPred('away')">
+        <div class="pred-option-left">
+          <div class="pred-option-label" id="po-away-label">Away Win</div>
+          <div class="pred-option-sub" id="po-away-pct">— % of fans predict this</div>
+        </div>
+        <div class="pred-check" id="pc-away"></div>
+      </div>
+    </div>
+    <div class="gas-note">
+      ⛽ Predictions are recorded <strong>on Base Mainnet</strong>. A small gas fee applies. Correct predictions earn <strong>+3 points</strong> on the leaderboard.
+    </div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeModal('predict-modal')">Cancel</button>
+      <button class="btn-primary" id="pred-confirm-btn" onclick="confirmPrediction()">Confirm on Base</button>
+    </div>
+  </div>
+</div>
+
+<div id="wallet-modal-slot"></div>
+<div id="tip-modal-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-nav').innerHTML = buildNav('matches.html');
+document.getElementById('wallet-modal-slot').innerHTML = walletModalHTML();
+document.getElementById('tip-modal-slot').innerHTML   = tipModalHTML();
+document.getElementById('toast-slot').innerHTML       = toastHTML();
+
+let activeTab    = 'upcoming';
+let activeLeague = 'all';
+let selectedPred = null;
+let currentMatchId = null;
+let userPredictions = {};
+
+function onLeagueFilter(league) { activeLeague = league; renderMatches(); }
+
+const now = new Date();
+const kick = (d,h,m) => { const dt=new Date(now); dt.setDate(dt.getDate()+d); dt.setHours(h,m||0,0,0); return dt; };
+const past = (d,h) => { const dt=new Date(now); dt.setDate(dt.getDate()-d); dt.setHours(h||20,0,0,0); return dt; };
+
+const MATCHES = [
+  { id:1,  home:'Arsenal',            away:'Liverpool',           league:'Premier League',   kickoff:kick(1,12,30), status:'upcoming', hs:null, as_:null, venue:'Emirates Stadium',      homePct:45, drawPct:25, awayPct:30 },
+  { id:2,  home:'Real Madrid',        away:'Barcelona',           league:'La Liga',           kickoff:kick(1,21,0),  status:'upcoming', hs:null, as_:null, venue:'Santiago Bernabeu',      homePct:38, drawPct:22, awayPct:40 },
+  { id:3,  home:'Bayern Munich',      away:'Borussia Dortmund',   league:'Bundesliga',        kickoff:kick(2,18,30), status:'upcoming', hs:null, as_:null, venue:'Allianz Arena',          homePct:55, drawPct:20, awayPct:25 },
+  { id:4,  home:'Inter Milan',        away:'Juventus',            league:'Serie A',           kickoff:kick(2,20,45), status:'upcoming', hs:null, as_:null, venue:'San Siro',               homePct:42, drawPct:30, awayPct:28 },
+  { id:5,  home:'Real Madrid',        away:'Manchester City',     league:'Champions League',  kickoff:kick(5,21,0),  status:'upcoming', hs:null, as_:null, venue:'Santiago Bernabeu',      homePct:48, drawPct:18, awayPct:34 },
+  { id:6,  home:'Arsenal',            away:'Bayern Munich',       league:'Champions League',  kickoff:kick(5,21,0),  status:'upcoming', hs:null, as_:null, venue:'Emirates Stadium',       homePct:35, drawPct:22, awayPct:43 },
+  { id:7,  home:'Man City',           away:'Chelsea',             league:'Premier League',    kickoff:kick(3,15,0),  status:'upcoming', hs:null, as_:null, venue:'Etihad Stadium',         homePct:52, drawPct:20, awayPct:28 },
+  { id:8,  home:'Barcelona',          away:'PSG',                 league:'Champions League',  kickoff:kick(7,21,0),  status:'upcoming', hs:null, as_:null, venue:'Camp Nou',               homePct:44, drawPct:24, awayPct:32 },
+  // LIVE
+  { id:9,  home:'Liverpool',          away:'Man United',          league:'Premier League',    kickoff:kick(-0,0),    status:'live',     hs:2,    as_:1,    venue:'Anfield',                min:"67'" },
+  { id:10, home:'Atletico Madrid',    away:'Sevilla',             league:'La Liga',           kickoff:kick(-0,0),    status:'live',     hs:1,    as_:1,    venue:'Metropolitano',          min:"44'" },
+  { id:11, home:'Bayer Leverkusen',   away:'Bayern Munich',       league:'Bundesliga',        kickoff:kick(-0,0),    status:'live',     hs:0,    as_:2,    venue:'BayArena',               min:"81'" },
+  // COMPLETED
+  { id:12, home:'Chelsea',            away:'Tottenham',           league:'Premier League',    kickoff:past(1,15),    status:'completed',hs:2,    as_:1,    result:'home' },
+  { id:13, home:'Barcelona',          away:'Real Madrid',         league:'La Liga',           kickoff:past(2,21),    status:'completed',hs:1,    as_:3,    result:'away' },
+  { id:14, home:'AC Milan',           away:'Inter Milan',         league:'Serie A',           kickoff:past(3,20),    status:'completed',hs:2,    as_:2,    result:'draw' },
+];
+
+function setTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activeTab = tab;
+  renderMatches();
+}
+
+function renderMatches() {
+  const el = document.getElementById('matches-container');
+  let matches = MATCHES.filter(m => m.status === activeTab);
+  if (activeLeague !== 'all') matches = matches.filter(m => m.league === activeLeague);
+  if (!matches.length) {
+    el.innerHTML = '<div class="empty"><div class="empty-ico">⚽</div><div class="empty-text">No matches found for this filter</div></div>';
+    return;
+  }
+  el.innerHTML = matches.map((m,i) => matchCardHTML(m,i)).join('');
+}
+
+function matchCardHTML(m, i) {
+  const isLive = m.status === 'live';
+  const isPast = m.status === 'completed';
+  const isUp   = m.status === 'upcoming';
+
+  const statusBadge = isLive
+    ? `<span class="badge badge-live">● LIVE ${m.min||''}</span>`
+    : isPast
+    ? `<span class="badge badge-completed">FULL TIME</span>`
+    : `<span class="badge badge-upcoming">⏰ ${fmtKickoff(m.kickoff)}</span>`;
+
+  const scoreSection = isLive || isPast
+    ? `<div class="score-box">
+        <div class="score-val">${m.hs} – ${m.as_}</div>
+        ${isPast ? `<div class="score-time">${fmtDate(m.kickoff)}</div>` : `<div class="score-time">${m.min}</div>`}
+       </div>`
+    : `<div class="score-box">
+        <div class="kickoff-time">${fmtKickoff(m.kickoff)}</div>
+        <div class="score-time">${m.venue||''}</div>
+       </div>`;
+
+  const myPred = userPredictions[m.id];
+  const predictRow = isUp ? `
+    <div class="predict-row">
+      <button class="pred-btn ${myPred==='home'?'home-sel':''} ${myPred?'confirmed':''}"
+        onclick="${myPred?'':` openPredictModal(${m.id},'${m.home}','${m.away}','${m.league}','home')`}">
+        <div class="pred-label">🏠 ${m.home.split(' ').pop()}</div>
+        <div class="pred-pct">${m.homePct}%</div>
+        <div class="pred-pts">+3 pts</div>
+      </button>
+      <button class="pred-btn ${myPred==='draw'?'draw-sel':''} ${myPred?'confirmed':''}"
+        onclick="${myPred?'':` openPredictModal(${m.id},'${m.home}','${m.away}','${m.league}','draw')`}">
+        <div class="pred-label">🤝 Draw</div>
+        <div class="pred-pct">${m.drawPct}%</div>
+        <div class="pred-pts">+3 pts</div>
+      </button>
+      <button class="pred-btn ${myPred==='away'?'away-sel':''} ${myPred?'confirmed':''}"
+        onclick="${myPred?'':` openPredictModal(${m.id},'${m.home}','${m.away}','${m.league}','away')`}">
+        <div class="pred-label">✈️ ${m.away.split(' ').pop()}</div>
+        <div class="pred-pct">${m.awayPct}%</div>
+        <div class="pred-pts">+3 pts</div>
+      </button>
+    </div>` : '';
+
+  return `<div class="match-card" style="animation-delay:${i*.05}s">
+    <div class="match-top">
+      <span class="match-league-tag">${escHtml(m.league)}</span>
+      ${statusBadge}
+    </div>
+    <div class="match-teams-row">
+      <div class="team-name">${escHtml(m.home)}</div>
+      ${scoreSection}
+      <div class="team-name away">${escHtml(m.away)}</div>
+    </div>
+    ${predictRow}
+    <div class="match-footer">
+      ${myPred ? `<span>✅ You predicted: <strong style="color:var(--blue)">${myPred.toUpperCase()}</strong></span>` : `<span>${m.venue||''}</span>`}
+      <span>${m.homePct+m.drawPct+m.awayPct > 0 ? 'Fan predictions recorded on Base' : ''}</span>
+    </div>
+  </div>`;
+}
+
+// PREDICT MODAL
+function openPredictModal(matchId, home, away, league, preselect) {
+  if (!walletAddress) { showToast('Connect your wallet to predict on Base!', true); setTimeout(openWalletModal,700); return; }
+  currentMatchId = matchId;
+  selectedPred   = null;
+  document.getElementById('pm-teams').textContent = `${home} vs ${away}`;
+  document.getElementById('pm-info').textContent  = `${league} · ${fmtKickoff(MATCHES.find(m=>m.id===matchId)?.kickoff)}`;
+  document.getElementById('po-home-label').textContent = `🏠 ${home} Win`;
+  document.getElementById('po-away-label').textContent = `✈️ ${away} Win`;
+  const m = MATCHES.find(x=>x.id===matchId);
+  if (m) {
+    document.getElementById('po-home-pct').textContent = `${m.homePct}% of fans predict this`;
+    document.getElementById('po-draw-pct').textContent = `${m.drawPct}% of fans predict this`;
+    document.getElementById('po-away-pct').textContent = `${m.awayPct}% of fans predict this`;
+  }
+  document.querySelectorAll('.pred-option').forEach(o=>o.classList.remove('sel'));
+  document.querySelectorAll('.pred-check').forEach(c=>c.textContent='');
+  if (preselect) selectPred(preselect);
+  openModal('predict-modal');
+}
+
+function selectPred(result) {
+  selectedPred = result;
+  document.querySelectorAll('.pred-option').forEach(o=>o.classList.remove('sel'));
+  document.querySelectorAll('.pred-check').forEach(c=>c.textContent='');
+  document.getElementById(`po-${result}`).classList.add('sel');
+  document.getElementById(`pc-${result}`).textContent='✓';
+}
+
+async function confirmPrediction() {
+  if (!selectedPred) { showToast('Select a prediction first!', true); return; }
+  const btn = document.getElementById('pred-confirm-btn');
+  btn.innerHTML = '<span class="spin"></span> Confirming on Base…';
+  btn.disabled = true;
+  try {
+    await new Promise(r => setTimeout(r, 1200)); // simulate tx
+    userPredictions[currentMatchId] = selectedPred;
+    closeModal('predict-modal');
+    showToast(`✅ Prediction recorded: ${selectedPred.toUpperCase()}!`);
+    renderMatches();
+  } catch(e) {
+    showToast('Failed: ' + e.message, true);
+  } finally {
+    btn.textContent = 'Confirm on Base';
+    btn.disabled = false;
+  }
+}
+
+window.addEventListener('load', renderMatches);
+</script>
+</body>
+</html>

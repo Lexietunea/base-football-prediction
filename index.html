@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Base Football — Home Feed</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+/* ── FEED SPECIFIC ── */
+.feed-wrap{display:flex;flex-direction:column;}
+.stats-bar{display:flex;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;}
+.sbar-item{flex:1;padding:14px 16px;border-right:1px solid var(--border);text-align:center;}
+.sbar-item:last-child{border-right:none;}
+.sbar-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;}
+.sbar-lbl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+
+/* COMPOSE */
+.compose{background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:18px;margin-bottom:20px;transition:border-color .2s;}
+.compose:focus-within{border-color:var(--border2);}
+.compose-row{display:flex;gap:12px;align-items:flex-start;}
+.my-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;
+  place-items:center;font-family:'Bebas Neue',sans-serif;font-size:15px;
+  background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;}
+.compose-text{flex:1;background:none;border:none;outline:none;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:14px;resize:none;padding-top:6px;min-height:64px;line-height:1.6;}
+.compose-text::placeholder{color:var(--muted2);}
+.media-preview-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.preview-thumb{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.preview-thumb img{width:150px;height:110px;object-fit:cover;display:block;}
+.preview-thumb video{width:200px;height:140px;object-fit:cover;display:block;}
+.preview-remove{position:absolute;top:5px;right:5px;width:24px;height:24px;
+  background:rgba(0,0,0,.75);border:none;border-radius:50%;color:#fff;
+  font-size:13px;cursor:pointer;display:grid;place-items:center;transition:background .15s;}
+.preview-remove:hover{background:var(--red);}
+.vid-thumb-label{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.65);
+  color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;}
+.compose-footer{display:flex;align-items:center;gap:8px;margin-top:14px;
+  padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;}
+.media-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
+  border:1px solid var(--border);background:none;color:var(--muted);
+  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;}
+.media-btn:hover{border-color:var(--blue);color:var(--blue);}
+.media-btn.has-media{border-color:var(--green);color:var(--green);}
+.char-left{font-size:11px;color:var(--muted);margin-left:auto;}
+.char-left.warn{color:var(--red);}
+
+/* POST CARDS */
+.post-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  margin-bottom:16px;overflow:hidden;transition:border-color .2s,transform .15s;animation:fadeUp .4s ease both;}
+.post-card:hover{border-color:var(--border2);transform:translateY(-1px);}
+.post-inner{padding:20px 20px 14px;}
+.post-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.post-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;
+  place-items:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;}
+.post-meta{flex:1;min-width:0;}
+.post-author-row{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;
+  color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.post-sub{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;}
+.post-time{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;flex-shrink:0;}
+.team-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:rgba(0,82,255,.12);color:#60a5fa;border:1px solid rgba(0,82,255,.3);}
+.league-lbl{font-size:10px;color:var(--muted);}
+.post-body{font-size:14px;line-height:1.65;color:#c8cedd;margin-bottom:4px;}
+
+/* POST MEDIA */
+.media-single img,.media-single video{width:100%;max-height:500px;
+  object-fit:cover;display:block;border-radius:10px;cursor:pointer;margin-top:10px;}
+.media-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:10px;overflow:hidden;margin-top:10px;}
+.media-grid-2 img,.media-grid-2 video{width:100%;height:220px;object-fit:cover;display:block;cursor:pointer;}
+.media-grid-3{display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:10px;overflow:hidden;margin-top:10px;}
+.media-main-cell img,.media-main-cell video{width:100%;height:282px;object-fit:cover;display:block;cursor:pointer;}
+.media-sub-cell img,.media-sub-cell video{width:100%;height:138px;object-fit:cover;display:block;cursor:pointer;}
+.media-main-cell{grid-row:1/3;}
+.vid-play{position:relative;}
+.vid-play::before{content:'▶';position:absolute;top:8px;left:8px;z-index:1;
+  background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:3px 8px;border-radius:5px;}
+.media-more{position:relative;cursor:pointer;}
+.media-more-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;
+  align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;
+  font-size:28px;color:#fff;letter-spacing:1px;pointer-events:none;}
+
+/* POST ACTIONS */
+.post-actions{display:flex;align-items:center;gap:4px;padding:10px 20px 12px;border-top:1px solid var(--border);}
+.act-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;
+  border:none;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;
+  font-size:12px;cursor:pointer;transition:all .15s;}
+.act-btn:hover{background:rgba(255,255,255,.04);color:var(--text);}
+.act-btn.liked{color:var(--red);}
+.tip-btn{margin-left:auto;display:flex;align-items:center;gap:7px;padding:8px 16px;
+  border-radius:9px;border:1px solid rgba(0,230,118,.3);background:rgba(0,230,118,.05);
+  color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px;
+  font-weight:600;cursor:pointer;transition:all .2s;}
+.tip-btn:hover{border-color:var(--green);background:rgba(0,230,118,.1);transform:translateY(-1px);}
+.tip-badge{font-size:9px;color:var(--muted);font-weight:400;}
+
+/* LIGHTBOX */
+.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);
+  z-index:2000;align-items:center;justify-content:center;}
+.lightbox.open{display:flex;}
+.lb-close{position:absolute;top:18px;right:22px;background:none;border:none;
+  color:#fff;font-size:30px;cursor:pointer;}
+.lightbox img,.lightbox video{max-width:90vw;max-height:90vh;border-radius:10px;}
+
+/* TRENDING WIDGET */
+.cr-row{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s;}
+.cr-row:hover{background:rgba(255,255,255,.02);}
+.cr-av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:12px;color:#fff;flex-shrink:0;}
+.cr-info{flex:1;min-width:0;}
+.cr-name{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text);}
+.cr-stats{font-size:10px;color:var(--muted);margin-top:1px;}
+.cr-earn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--green);flex-shrink:0;}
+.cr-rank{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted2);width:20px;text-align:center;flex-shrink:0;}
+.cr-rank.top{color:var(--gold);}
+</style>
+</head>
+<body>
+<div class="shell">
+
+<!-- TOPNAV -->
+<nav class="topnav">
+  <a class="logo" href="index.html">
+    <div class="logo-icon">⚽</div>BASE <span>FOOTBALL</span>
+  </a>
+  <div class="nav-search">
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search creators, teams, topics…"/>
+  </div>
+  <div class="nav-right">
+    <span class="net-badge" id="net-badge"><span class="net-dot"></span>Base Mainnet</span>
+    <button class="btn-wallet" id="wallet-btn" onclick="openWalletModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <span id="wallet-text">Connect Wallet</span>
+    </button>
+  </div>
+</nav>
+
+<!-- LEFT SIDEBAR -->
+<aside class="sidebar-l" id="sidebar-nav"></aside>
+
+<!-- MAIN FEED -->
+<main class="page feed-wrap">
+  <div class="stats-bar">
+    <div class="sbar-item"><div class="sbar-val" style="color:var(--blue)" id="s-fans">24.8K</div><div class="sbar-lbl">Active Fans</div></div>
+    <div class="sbar-item"><div class="sbar-val" style="color:var(--gold)">142 ETH</div><div class="sbar-lbl">Tips Today</div></div>
+    <div class="sbar-item"><div class="sbar-val" style="color:var(--green)">1,284</div><div class="sbar-lbl">Posts Today</div></div>
+    <div class="sbar-item"><div class="sbar-val" style="color:var(--accent)">38</div><div class="sbar-lbl">Live Matches</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="setTab(this,'all')">For You</div>
+    <div class="tab" onclick="setTab(this,'text')">Updates</div>
+    <div class="tab" onclick="setTab(this,'image')">Photos</div>
+    <div class="tab" onclick="setTab(this,'video')">Videos</div>
+  </div>
+
+  <!-- COMPOSE -->
+  <div class="compose">
+    <div class="compose-row">
+      <div class="my-av" id="my-av">⚽</div>
+      <textarea class="compose-text" id="post-text"
+        placeholder="Share your thoughts on the beautiful game… ⚽"
+        maxlength="500" oninput="onTextInput()" rows="3"></textarea>
+    </div>
+    <div class="media-preview-grid" id="preview-grid"></div>
+    <div class="compose-footer">
+      <button class="media-btn" id="photo-btn" onclick="document.getElementById('img-input').click()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        Photo
+      </button>
+      <button class="media-btn" id="video-btn" onclick="document.getElementById('vid-input').click()">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+        Video
+      </button>
+      <button class="media-btn" onclick="showToast('Tag your team when posting!')">🏷️ Team Tag</button>
+      <span class="char-left" id="char-left">500</span>
+      <button class="btn-primary" onclick="submitPost()">Post to Base</button>
+    </div>
+  </div>
+  <input type="file" id="img-input" accept="image/*" multiple style="display:none" onchange="onImagesSelected(event)"/>
+  <input type="file" id="vid-input" accept="video/*" style="display:none" onchange="onVideoSelected(event)"/>
+
+  <div id="posts-feed"></div>
+</main>
+
+<!-- RIGHT SIDEBAR -->
+<aside class="sidebar-r">
+  <div class="widget">
+    <div class="widget-head"><span class="widget-title">Top Creators</span><a href="creators.html" class="widget-link">View All →</a></div>
+    <div class="cr-row"><span class="cr-rank top">1</span><div class="cr-av" style="background:linear-gradient(135deg,#fbbf24,#f97316)">VJ</div><div class="cr-info"><div class="cr-name">0xVictor_J</div><div class="cr-stats">Real Madrid · 14.2K</div></div><div class="cr-earn">8.4 ETH</div></div>
+    <div class="cr-row"><span class="cr-rank top">2</span><div class="cr-av" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">BV</div><div class="cr-info"><div class="cr-name">0xBarcaVision</div><div class="cr-stats">Barcelona · 11.8K</div></div><div class="cr-earn">6.1 ETH</div></div>
+    <div class="cr-row"><span class="cr-rank top">3</span><div class="cr-av" style="background:linear-gradient(135deg,#ef4444,#dc2626)">KE</div><div class="cr-info"><div class="cr-name">0xKlopp_era</div><div class="cr-stats">Liverpool · 9.4K</div></div><div class="cr-earn">5.8 ETH</div></div>
+  </div>
+  <div class="widget">
+    <div class="widget-head"><span class="widget-title">Trending</span></div>
+    <div class="trend-item"><div class="trend-tag">#UCLFinal</div><div class="trend-count">8,914 posts</div></div>
+    <div class="trend-item"><div class="trend-tag">#ViniciusJr</div><div class="trend-count">4,281 posts</div></div>
+    <div class="trend-item"><div class="trend-tag">#LamineYamal</div><div class="trend-count">3,102 posts</div></div>
+    <div class="trend-item"><div class="trend-tag">#NorthLondonDerby</div><div class="trend-count">5,440 posts</div></div>
+    <div class="trend-item"><div class="trend-tag">#BaseFootball</div><div class="trend-count">12,873 posts</div></div>
+  </div>
+</aside>
+
+</div><!-- end shell -->
+
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <button class="lb-close" onclick="closeLightbox()">✕</button>
+  <div id="lb-inner"></div>
+</div>
+
+<div id="wallet-modal-slot"></div>
+<div id="tip-modal-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="shared.js"></script>
+<script>
+// ── BUILD SHARED ELEMENTS ──
+document.getElementById('sidebar-nav').innerHTML = buildNav('index.html');
+document.getElementById('wallet-modal-slot').innerHTML = walletModalHTML();
+document.getElementById('tip-modal-slot').innerHTML   = tipModalHTML();
+document.getElementById('toast-slot').innerHTML       = toastHTML();
+
+// ── STATE ──
+let activeTab    = 'all';
+let activeLeague = 'all';
+let pendingMedia = [];
+let allPosts     = [];
+
+function onLeagueFilter(league) { activeLeague = league; renderFeed(); }
+
+// ── MEDIA UPLOAD ──
+function onImagesSelected(e) {
+  const files = Array.from(e.target.files);
+  if (!files.length) return;
+  const slots = 4 - pendingMedia.length;
+  if (slots <= 0) { showToast('Max 4 media items', true); return; }
+  let done = 0;
+  files.slice(0, slots).forEach(f => {
+    const r = new FileReader();
+    r.onload = ev => {
+      pendingMedia.push({ type:'image', dataUrl: ev.target.result, name: f.name });
+      if (++done === Math.min(files.length, slots)) renderPreviews();
+    };
+    r.readAsDataURL(f);
+  });
+  e.target.value = '';
+}
+
+function onVideoSelected(e) {
+  const f = e.target.files[0];
+  if (!f) return;
+  if (f.size > 150*1024*1024) { showToast('Video must be under 150MB', true); e.target.value=''; return; }
+  if (pendingMedia.length >= 4) { showToast('Max 4 media items', true); e.target.value=''; return; }
+  const r = new FileReader();
+  r.onload = ev => { pendingMedia.push({ type:'video', dataUrl: ev.target.result, name: f.name }); renderPreviews(); };
+  r.readAsDataURL(f);
+  e.target.value = '';
+}
+
+function renderPreviews() {
+  const grid = document.getElementById('preview-grid');
+  grid.innerHTML = pendingMedia.map((m,i) => `
+    <div class="preview-thumb">
+      ${m.type==='image'
+        ? `<img src="${m.dataUrl}" alt="${m.name}"/>`
+        : `<video src="${m.dataUrl}" muted playsinline></video><div class="vid-thumb-label">▶ Video</div>`}
+      <button class="preview-remove" onclick="removeMedia(${i})">✕</button>
+    </div>`).join('');
+  document.getElementById('photo-btn').classList.toggle('has-media', pendingMedia.some(m=>m.type==='image'));
+  document.getElementById('video-btn').classList.toggle('has-media', pendingMedia.some(m=>m.type==='video'));
+}
+
+function removeMedia(i) { pendingMedia.splice(i,1); renderPreviews(); }
+
+function onTextInput() {
+  const rem = 500 - document.getElementById('post-text').value.length;
+  const el  = document.getElementById('char-left');
+  el.textContent = rem;
+  el.classList.toggle('warn', rem < 50);
+}
+
+// ── SUBMIT POST ──
+function submitPost() {
+  const txt = document.getElementById('post-text').value.trim();
+  if (!txt && !pendingMedia.length) { showToast('Write something or add media first ⚽', true); return; }
+  const hasImg = pendingMedia.some(m=>m.type==='image');
+  const hasVid = pendingMedia.some(m=>m.type==='video');
+  allPosts.unshift({
+    id: Date.now(),
+    author:   walletAddress ? short(walletAddress) : '0xYou.base',
+    initials: walletAddress ? walletAddress.slice(2,4).toUpperCase() : 'YO',
+    gradient: 'linear-gradient(135deg,#0052ff,#00d4ff)',
+    badge: 'Creator', team:'Base Football',
+    league: activeLeague==='all'?'All Leagues':activeLeague,
+    content: txt,
+    media: pendingMedia.map(m=>({type:m.type, url:m.dataUrl})),
+    likes:0, comments:0, time:'just now', wallet: walletAddress,
+    type: hasVid?'video':hasImg?'image':'text',
+  });
+  renderFeed();
+  document.getElementById('post-text').value='';
+  pendingMedia=[];
+  renderPreviews();
+  onTextInput();
+  showToast('Post published! 🔥');
+}
+
+// ── RENDER FEED ──
+function renderFeed() {
+  const el = document.getElementById('posts-feed');
+  let posts = [...allPosts];
+  if (activeTab==='image')  posts = posts.filter(p=>p.type==='image');
+  if (activeTab==='video')  posts = posts.filter(p=>p.type==='video');
+  if (activeTab==='text')   posts = posts.filter(p=>!p.media?.length||p.type==='text');
+  if (activeLeague!=='all') posts = posts.filter(p=>p.league===activeLeague);
+  if (!posts.length) {
+    el.innerHTML='<div class="empty"><div class="empty-ico">⚽</div><div class="empty-text">No posts yet — be the first to post!</div></div>';
+    return;
+  }
+  el.innerHTML = posts.map((p,i)=>postHTML(p,i)).join('');
+}
+
+function postHTML(p,i) {
+  return `<div class="post-card" style="animation-delay:${i*.04}s">
+    <div class="post-inner">
+      <div class="post-header">
+        <div class="post-av" style="background:${p.gradient||'var(--blue)'}">${p.initials||'??'}</div>
+        <div class="post-meta">
+          <div class="post-author-row">${escHtml(p.author)}<span class="badge badge-${(p.badge||'fan').toLowerCase().replace(' ','')}">${p.badge||'Fan'}</span></div>
+          <div class="post-sub">${p.team?`<span class="team-pill">${escHtml(p.team)}</span>`:''}<span class="league-lbl">${escHtml(p.league||'')}</span></div>
+        </div>
+        <span class="post-time">${p.time||timeAgo(p.created_at)}</span>
+      </div>
+      ${p.content?`<div class="post-body">${escHtml(p.content)}</div>`:''}
+      ${buildMediaHTML(p.media||[])}
+    </div>
+    <div class="post-actions">
+      <button class="act-btn" onclick="toggleLike(this,event)">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <span>${p.likes}</span>
+      </button>
+      <button class="act-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <span>${p.comments}</span>
+      </button>
+      <button class="act-btn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        Share
+      </button>
+      <button class="tip-btn" onclick="openTipModal('${escHtml(p.author)}','${p.wallet||''}','${p.initials||'??'}','${p.gradient||''}',event)">
+        ⬡ Tip Creator <span class="tip-badge">on Base</span>
+      </button>
+    </div>
+  </div>`;
+}
+
+function buildMediaHTML(media) {
+  if (!media.length) return '';
+  const n = media.length;
+  const el = (m,cls='') => m.type==='video'
+    ? `<div class="vid-play ${cls}" onclick="openLightbox('${m.url}','video')"><video src="${m.url}" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video></div>`
+    : `<img src="${m.url}" class="${cls}" loading="lazy" onclick="openLightbox('${m.url}','image')" style="width:100%;height:100%;object-fit:cover;display:block"/>`;
+  if (n===1) return `<div class="media-single">${el(media[0])}</div>`;
+  if (n===2) return `<div class="media-grid-2">${el(media[0])}${el(media[1])}</div>`;
+  const extra = n>3 ? `<div class="media-more-overlay">+${n-3}</div>` : '';
+  return `<div class="media-grid-3"><div class="media-main-cell">${el(media[0])}</div><div class="media-sub-cell">${el(media[1])}</div><div class="media-sub-cell media-more">${el(media[2])}${extra}</div></div>`;
+}
+
+function openLightbox(url, type) {
+  document.getElementById('lb-inner').innerHTML = type==='video'
+    ? `<video src="${url}" controls autoplay style="max-width:90vw;max-height:90vh;border-radius:10px"></video>`
+    : `<img src="${url}" style="max-width:90vw;max-height:90vh;border-radius:10px"/>`;
+  document.getElementById('lightbox').classList.add('open');
+}
+function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); document.getElementById('lb-inner').innerHTML=''; }
+
+function setTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active'); activeTab=tab; renderFeed();
+}
+function toggleLike(btn, e) {
+  e.stopPropagation();
+  const liked = btn.classList.toggle('liked');
+  const s = btn.querySelector('span');
+  s.textContent = liked ? parseInt(s.textContent)+1 : Math.max(0,parseInt(s.textContent)-1);
+}
+
+// ── SAMPLE POSTS ──
+const SAMPLE = [
+  { id:1, author:'0xVictor_J.base', initials:'VJ', gradient:'linear-gradient(135deg,#fbbf24,#f97316)', badge:'Creator', team:'Real Madrid', league:'La Liga', content:'Vinicius in the 2nd half tonight was something else entirely 🔥 That nutmeg followed by the finish — genuinely one of the top 5 UCL moments this campaign.', media:[], likes:412, comments:54, time:'8m ago', type:'text', wallet:'0xabc001' },
+  { id:2, author:'0xKlopp_era.base', initials:'KE', gradient:'linear-gradient(135deg,#ef4444,#dc2626)', badge:'Top Fan', team:'Liverpool', league:'Premier League', content:"Darwin Nunez getting slated again but 2 goals and an assist. People want perfection but forget he's still only 24. Anfield knows what it has 🔴", media:[], likes:891, comments:143, time:'22m ago', type:'text', wallet:'0xabc002' },
+  { id:3, author:'0xBarcaVision.base', initials:'BV', gradient:'linear-gradient(135deg,#3b82f6,#1d4ed8)', badge:'Verified', team:'Barcelona', league:'La Liga', content:"Lamine Yamal at 17 doing things that took Messi until 22 to figure out. Just appreciate what we're witnessing 🔵🔴", media:[], likes:1200, comments:207, time:'1h ago', type:'text', wallet:'0xabc003' },
+  { id:4, author:'0xManUtd_DNA.base', initials:'MU', gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', badge:'Creator', team:'Man United', league:'Premier League', content:'3 academy graduates starting together was proper United. The identity is being rebuilt from the ground up 🧵', media:[], likes:674, comments:98, time:'2h ago', type:'text', wallet:'0xabc004' },
+];
+
+window.addEventListener('load', () => {
+  allPosts = [...SAMPLE];
+  renderFeed();
+  let fans = 24800;
+  setInterval(() => {
+    fans += Math.floor(Math.random()*3);
+    const el = document.getElementById('s-fans');
+    if (el) el.textContent = (fans/1000).toFixed(1)+'K';
+  }, 4000);
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Base Football — Earnings</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+/* EARNINGS HERO */
+.earnings-hero{background:linear-gradient(135deg,rgba(0,82,255,.12),rgba(0,212,255,.06));
+  border:1px solid rgba(0,82,255,.2);border-radius:var(--radius-lg);
+  padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;gap:32px;}
+.eh-main{flex:1;}
+.eh-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.eh-amount{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;color:var(--text);line-height:1;}
+.eh-usd{font-size:14px;color:var(--muted);margin-top:6px;}
+.eh-actions{display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
+.btn-withdraw{display:flex;align-items:center;gap:8px;padding:12px 24px;
+  border-radius:10px;background:var(--green);color:#000;border:none;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.btn-withdraw:hover{opacity:.88;}
+.btn-share{display:flex;align-items:center;gap:8px;padding:12px 24px;
+  border-radius:10px;background:none;color:var(--blue);border:1px solid rgba(0,82,255,.3);
+  font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-share:hover{background:rgba(0,82,255,.06);}
+
+/* WALLET CONNECT PROMPT */
+.connect-prompt{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:48px;text-align:center;margin-bottom:24px;}
+.cp-icon{font-size:52px;margin-bottom:16px;}
+.cp-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:8px;}
+.cp-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+
+/* STATS GRID */
+.earn-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.earn-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;}
+.es-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:4px;}
+.es-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.es-change{font-size:11px;margin-top:4px;}
+.es-change.up{color:var(--green);}
+.es-change.down{color:var(--red);}
+
+/* TIP HISTORY */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-title-sm{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--text);}
+.tip-history-item{display:flex;align-items:center;gap:14px;padding:14px 18px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  margin-bottom:10px;transition:border-color .2s;animation:fadeUp .35s ease both;}
+.tip-history-item:hover{border-color:var(--border2);}
+.tip-av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;flex-shrink:0;}
+.tip-info{flex:1;}
+.tip-from{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);}
+.tip-post{font-size:11px;color:var(--muted);margin-top:2px;}
+.tip-amount-col{text-align:right;flex-shrink:0;}
+.tip-eth-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green);}
+.tip-time{font-size:10px;color:var(--muted);margin-top:2px;}
+.tip-tx{font-size:10px;color:var(--blue);cursor:pointer;text-decoration:underline;display:block;margin-top:2px;}
+
+/* PREDICTION HISTORY */
+.pred-history-item{display:flex;align-items:center;gap:12px;padding:14px 18px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  margin-bottom:10px;transition:border-color .2s;animation:fadeUp .35s ease both;}
+.pred-history-item:hover{border-color:var(--border2);}
+.pred-match-info{flex:1;}
+.pred-match-name{font-size:13px;font-weight:600;color:var(--text);}
+.pred-match-league{font-size:11px;color:var(--muted);margin-top:2px;}
+.pred-result-col{text-align:center;flex-shrink:0;min-width:80px;}
+.pred-pick{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;}
+.pred-pick.correct{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.pred-pick.wrong{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.pred-pick.pending{background:rgba(255,209,102,.1);color:var(--gold);border:1px solid rgba(255,209,102,.3);}
+.pred-pts-col{font-family:'Bebas Neue',sans-serif;font-size:20px;text-align:right;flex-shrink:0;min-width:60px;}
+.pred-pts-col.earned{color:var(--green);}
+.pred-pts-col.pending{color:var(--muted);}
+
+/* CHART BAR */
+.earnings-chart{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:24px;}
+.chart-bars{display:flex;align-items:flex-end;gap:6px;height:100px;margin-top:16px;}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.chart-bar{width:100%;background:rgba(0,82,255,.2);border-radius:4px 4px 0 0;
+  border:1px solid rgba(0,82,255,.3);transition:background .2s;cursor:pointer;}
+.chart-bar:hover{background:var(--blue);}
+.chart-bar.today{background:var(--blue);}
+.chart-day{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="shell no-right">
+
+<nav class="topnav">
+  <a class="logo" href="index.html"><div class="logo-icon">⚽</div>BASE <span>FOOTBALL</span></a>
+  <div class="nav-search">
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search transactions…"/>
+  </div>
+  <div class="nav-right">
+    <span class="net-badge" id="net-badge"><span class="net-dot"></span>Base Mainnet</span>
+    <button class="btn-wallet" id="wallet-btn" onclick="openWalletModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <span id="wallet-text">Connect Wallet</span>
+    </button>
+  </div>
+</nav>
+
+<aside class="sidebar-l" id="sidebar-nav"></aside>
+
+<main class="page">
+  <div class="page-header">
+    <div class="page-title">Earnings</div>
+    <div class="page-sub">Your tips received and prediction points on Base Mainnet</div>
+  </div>
+
+  <!-- CONNECT PROMPT shown when no wallet -->
+  <div id="connect-prompt" class="connect-prompt">
+    <div class="cp-icon">💰</div>
+    <div class="cp-title">Connect Your Wallet</div>
+    <div class="cp-sub">Connect your wallet to see your earnings from tips and predictions on Base Mainnet. All transactions are fully on-chain.</div>
+    <button class="btn-primary" onclick="openWalletModal()">Connect Wallet to View Earnings</button>
+  </div>
+
+  <!-- EARNINGS CONTENT shown after wallet connects -->
+  <div id="earnings-content" style="display:none">
+
+    <!-- Hero -->
+    <div class="earnings-hero">
+      <div class="eh-main">
+        <div class="eh-label">Total Earned on Base</div>
+        <div class="eh-amount" id="total-eth">0.000 ETH</div>
+        <div class="eh-usd" id="total-usd">≈ $0.00 USD</div>
+      </div>
+      <div class="eh-actions">
+        <button class="btn-withdraw" onclick="withdrawEarnings()">
+          ⬡ Withdraw to Wallet
+        </button>
+        <button class="btn-share" onclick="showToast('Share your earnings!')">
+          📊 Share Stats
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="earn-stats">
+      <div class="earn-stat">
+        <div class="es-val" style="color:var(--green)" id="tips-received">0</div>
+        <div class="es-lbl">Tips Received</div>
+        <div class="es-change up" id="tips-change">+0 this week</div>
+      </div>
+      <div class="earn-stat">
+        <div class="es-val" style="color:var(--blue)" id="pred-points">0</div>
+        <div class="es-lbl">Prediction Points</div>
+        <div class="es-change up" id="pred-change">+0 this week</div>
+      </div>
+      <div class="earn-stat">
+        <div class="es-val" style="color:var(--gold)" id="pred-accuracy">0%</div>
+        <div class="es-lbl">Prediction Accuracy</div>
+        <div class="es-change" id="accuracy-change">of all predictions</div>
+      </div>
+    </div>
+
+    <!-- Weekly earnings chart -->
+    <div class="earnings-chart">
+      <div class="section-head">
+        <div class="section-title-sm">Weekly Earnings</div>
+        <span style="font-size:11px;color:var(--muted)">Last 7 days · ETH</span>
+      </div>
+      <div class="chart-bars" id="chart-bars"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="setTab(this,'tips')">Tips Received</div>
+      <div class="tab" onclick="setTab(this,'predictions')">Predictions</div>
+    </div>
+
+    <div id="tips-section">
+      <div id="tips-list"></div>
+    </div>
+
+    <div id="predictions-section" style="display:none">
+      <div id="predictions-list"></div>
+    </div>
+
+  </div>
+</main>
+
+</div>
+
+<!-- WITHDRAW MODAL -->
+<div class="overlay" id="withdraw-modal" onclick="overlayClose(event,'withdraw-modal')">
+  <div class="modal">
+    <div class="modal-title">Withdraw Earnings ⬡</div>
+    <div class="modal-sub">Withdraw your accumulated tips from the BaseFootball smart contract directly to your wallet.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Available to withdraw</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:var(--green)" id="withdraw-amount">0.000 ETH</div>
+    </div>
+    <div class="gas-note">⛽ Withdrawal is an <strong>on-chain Base transaction</strong>. Gas fee ≈ $0.01.</div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeModal('withdraw-modal')">Cancel</button>
+      <button class="btn-green" onclick="confirmWithdraw()">Withdraw on Base</button>
+    </div>
+  </div>
+</div>
+
+<div id="wallet-modal-slot"></div>
+<div id="tip-modal-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-nav').innerHTML = buildNav('earnings.html');
+document.getElementById('wallet-modal-slot').innerHTML = walletModalHTML();
+document.getElementById('tip-modal-slot').innerHTML   = tipModalHTML();
+document.getElementById('toast-slot').innerHTML       = toastHTML();
+
+const SAMPLE_TIPS = [
+  { from:'0xVictor_J.base',    gradient:'linear-gradient(135deg,#fbbf24,#f97316)', initials:'VJ', post:'Your post about UCL goals 🔥',    amount:'0.05',  time:'2h ago',   tx:'0xabc123' },
+  { from:'0xKlopp_era.base',   gradient:'linear-gradient(135deg,#ef4444,#dc2626)', initials:'KE', post:'Premier League analysis thread', amount:'0.01',  time:'5h ago',   tx:'0xdef456' },
+  { from:'0xBarcaVision.base', gradient:'linear-gradient(135deg,#3b82f6,#1d4ed8)', initials:'BV', post:'La Liga breakdown',              amount:'0.005', time:'1d ago',   tx:'0xghi789' },
+  { from:'0xManUtd_DNA.base',  gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', initials:'MU', post:'Match day post',                 amount:'0.1',   time:'2d ago',   tx:'0xjkl012' },
+  { from:'0xDerby_Mode.base',  gradient:'linear-gradient(135deg,#0ea5e9,#0284c7)', initials:'DM', post:'Champions League predictions',   amount:'0.05',  time:'3d ago',   tx:'0xmno345' },
+];
+
+const SAMPLE_PREDS = [
+  { match:'Liverpool vs Man United',   league:'Premier League',   pick:'home', result:'correct', score:'2-1', points:3,  time:'Today' },
+  { match:'Barcelona vs Real Madrid',  league:'La Liga',           pick:'away', result:'correct', score:'1-3', points:3,  time:'2 days ago' },
+  { match:'Bayern vs Bayer Leverkusen',league:'Bundesliga',        pick:'home', result:'wrong',   score:'2-2', points:0,  time:'3 days ago' },
+  { match:'Arsenal vs Tottenham',      league:'Premier League',   pick:'home', result:'correct', score:'2-0', points:3,  time:'5 days ago' },
+  { match:'Inter vs Juventus',         league:'Serie A',           pick:'draw', result:'pending', score:'—',   points:0,  time:'Tomorrow' },
+];
+
+const WEEKLY_DATA = [0.005, 0.01, 0.05, 0.1, 0.025, 0.005, 0.215];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+let activeTab = 'tips';
+
+function setTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activeTab = tab;
+  document.getElementById('tips-section').style.display        = tab==='tips'?'block':'none';
+  document.getElementById('predictions-section').style.display = tab==='predictions'?'block':'none';
+}
+
+function renderEarnings() {
+  const totalEth = SAMPLE_TIPS.reduce((a,t)=>a+parseFloat(t.amount),0).toFixed(3);
+  document.getElementById('total-eth').textContent = `${totalEth} ETH`;
+  document.getElementById('total-usd').textContent = `≈ $${(parseFloat(totalEth)*2500).toFixed(2)} USD`;
+  document.getElementById('tips-received').textContent = SAMPLE_TIPS.length;
+  document.getElementById('pred-points').textContent = SAMPLE_PREDS.reduce((a,p)=>a+p.points,0);
+  const correct = SAMPLE_PREDS.filter(p=>p.result==='correct').length;
+  const total   = SAMPLE_PREDS.filter(p=>p.result!=='pending').length;
+  document.getElementById('pred-accuracy').textContent = total>0?`${Math.round(correct/total*100)}%`:'—';
+  document.getElementById('tips-change').textContent   = `+${SAMPLE_TIPS.filter(t=>t.time.includes('h')).length} this week`;
+  document.getElementById('pred-change').textContent   = `+${SAMPLE_PREDS.filter(p=>p.points>0).length*3} this week`;
+  document.getElementById('withdraw-amount').textContent = `${totalEth} ETH`;
+  renderChart();
+  renderTips();
+  renderPredictions();
+}
+
+function renderChart() {
+  const maxVal = Math.max(...WEEKLY_DATA);
+  document.getElementById('chart-bars').innerHTML = WEEKLY_DATA.map((v,i) => `
+    <div class="chart-bar-wrap">
+      <div class="chart-bar ${i===6?'today':''}" style="height:${Math.max(6,Math.round(v/maxVal*90))}px" title="${v} ETH"></div>
+      <div class="chart-day">${DAYS[i]}</div>
+    </div>`).join('');
+}
+
+function renderTips() {
+  document.getElementById('tips-list').innerHTML = SAMPLE_TIPS.map((t,i) => `
+    <div class="tip-history-item" style="animation-delay:${i*.04}s">
+      <div class="tip-av" style="background:${t.gradient}">${t.initials}</div>
+      <div class="tip-info">
+        <div class="tip-from">${escHtml(t.from)}</div>
+        <div class="tip-post">Tipped on: "${escHtml(t.post)}"</div>
+      </div>
+      <div class="tip-amount-col">
+        <div class="tip-eth-val">+${t.amount} ETH</div>
+        <div class="tip-time">${t.time}</div>
+        <span class="tip-tx" onclick="window.open('https://basescan.org/tx/${t.tx}','_blank')">View on Basescan ↗</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderPredictions() {
+  document.getElementById('predictions-list').innerHTML = SAMPLE_PREDS.map((p,i) => `
+    <div class="pred-history-item" style="animation-delay:${i*.04}s">
+      <div class="pred-match-info">
+        <div class="pred-match-name">${escHtml(p.match)}</div>
+        <div class="pred-match-league">${escHtml(p.league)} · ${p.time}</div>
+      </div>
+      <div class="pred-result-col">
+        <span class="pred-pick ${p.result}">${p.pick.toUpperCase()}</span>
+        ${p.result!=='pending'?`<div style="font-size:10px;color:var(--muted);margin-top:4px">Result: ${p.score}</div>`:''}
+      </div>
+      <div class="pred-pts-col ${p.result==='pending'?'pending':'earned'}">
+        ${p.result==='pending'?'—':`+${p.points}`}
+        <div style="font-size:9px;color:var(--muted);font-weight:400">pts</div>
+      </div>
+    </div>`).join('');
+}
+
+function withdrawEarnings() {
+  if (!walletAddress) { showToast('Connect wallet first!', true); return; }
+  openModal('withdraw-modal');
+}
+
+async function confirmWithdraw() {
+  closeModal('withdraw-modal');
+  showToast('Deploy BaseFootball.sol contract to enable withdrawals on Base!', true);
+}
+
+// Show earnings when wallet connects
+const origUpdateUI = updateWalletUI;
+updateWalletUI = function() {
+  origUpdateUI.call(this);
+  if (walletAddress) {
+    document.getElementById('connect-prompt').style.display  = 'none';
+    document.getElementById('earnings-content').style.display= 'block';
+    renderEarnings();
+  } else {
+    document.getElementById('connect-prompt').style.display  = 'block';
+    document.getElementById('earnings-content').style.display= 'none';
+  }
+};
+
+window.addEventListener('load', () => {
+  if (walletAddress) {
+    document.getElementById('connect-prompt').style.display  = 'none';
+    document.getElementById('earnings-content').style.display= 'block';
+    renderEarnings();
+  }
+});
+</script>
+</body>
+</html>

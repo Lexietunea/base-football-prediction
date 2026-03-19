@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Base Football — Top Creators</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="shared.css"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+.creator-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:16px;margin-bottom:24px;}
+.creator-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:22px;transition:all .2s;animation:fadeUp .4s ease both;cursor:pointer;position:relative;overflow:hidden;}
+.creator-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.creator-card::before{content:'';position:absolute;top:0;left:0;right:0;height:3px;border-radius:var(--radius-lg) var(--radius-lg) 0 0;}
+.creator-card.rank-1::before{background:var(--gold);}
+.creator-card.rank-2::before{background:#94a3b8;}
+.creator-card.rank-3::before{background:#cd7c2f;}
+.creator-card-top{display:flex;align-items:center;gap:14px;margin-bottom:16px;}
+.creator-av-wrap{position:relative;flex-shrink:0;}
+.creator-av{width:52px;height:52px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:18px;color:#fff;}
+.creator-rank-badge{position:absolute;bottom:-2px;right:-2px;width:20px;height:20px;
+  border-radius:50%;background:var(--card);border:2px solid var(--border);
+  display:grid;place-items:center;font-family:'Bebas Neue',sans-serif;font-size:11px;}
+.rank-1 .creator-rank-badge{color:var(--gold);}
+.rank-2 .creator-rank-badge{color:#94a3b8;}
+.rank-3 .creator-rank-badge{color:#cd7c2f;}
+.creator-info{flex:1;min-width:0;}
+.creator-name{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;
+  color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.creator-team{font-size:11px;color:var(--muted);margin-top:3px;display:flex;align-items:center;gap:6px;}
+.creator-stats{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;
+  background:var(--surface);border-radius:10px;padding:12px;margin-bottom:14px;}
+.cstat{text-align:center;}
+.cstat-val{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:.5px;}
+.cstat-lbl{font-size:9px;color:var(--muted);margin-top:2px;text-transform:uppercase;letter-spacing:.5px;}
+.creator-actions{display:flex;gap:8px;}
+.btn-follow{flex:1;padding:8px;border:1px solid var(--border);border-radius:9px;
+  background:none;color:var(--muted);font-family:'DM Sans',sans-serif;font-size:12px;
+  font-weight:500;cursor:pointer;transition:all .2s;}
+.btn-follow:hover,.btn-follow.following{border-color:var(--blue);color:var(--blue);background:rgba(0,82,255,.06);}
+.btn-tip-creator{flex:1;padding:8px;border:1px solid rgba(0,230,118,.3);border-radius:9px;
+  background:rgba(0,230,118,.05);color:var(--green);font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:600;cursor:pointer;transition:all .2s;}
+.btn-tip-creator:hover{border-color:var(--green);background:rgba(0,230,118,.1);}
+
+/* LEADERBOARD TABLE */
+.lb-table{width:100%;border-collapse:collapse;margin-bottom:24px;}
+.lb-table th{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1px;padding:10px 16px;
+  border-bottom:1px solid var(--border);text-align:left;font-weight:600;}
+.lb-table td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+.lb-table tr:hover td{background:rgba(255,255,255,.02);}
+.lb-table tr:last-child td{border-bottom:none;}
+.lb-rank{font-family:'Bebas Neue',sans-serif;font-size:20px;color:var(--muted2);width:40px;}
+.lb-rank.gold{color:var(--gold);}
+.lb-rank.silver{color:#94a3b8;}
+.lb-rank.bronze{color:#cd7c2f;}
+.lb-creator-cell{display:flex;align-items:center;gap:10px;}
+.lb-av{width:36px;height:36px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;flex-shrink:0;}
+.lb-name{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);}
+.lb-team{font-size:11px;color:var(--muted);margin-top:2px;}
+.lb-eth{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--green);}
+.lb-pts{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--blue);}
+.lb-posts{font-size:12px;color:var(--muted);}
+</style>
+</head>
+<body>
+<div class="shell no-right">
+
+<!-- TOPNAV -->
+<nav class="topnav">
+  <a class="logo" href="index.html"><div class="logo-icon">⚽</div>BASE <span>FOOTBALL</span></a>
+  <div class="nav-search">
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" id="creator-search" placeholder="Search creators…" oninput="filterCreators(this.value)"/>
+  </div>
+  <div class="nav-right">
+    <span class="net-badge" id="net-badge"><span class="net-dot"></span>Base Mainnet</span>
+    <button class="btn-wallet" id="wallet-btn" onclick="openWalletModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <span id="wallet-text">Connect Wallet</span>
+    </button>
+  </div>
+</nav>
+
+<aside class="sidebar-l" id="sidebar-nav"></aside>
+
+<main class="page">
+  <div class="page-header">
+    <div class="page-title">Top Creators</div>
+    <div class="page-sub">The best football content creators on Base — ranked by tips earned</div>
+  </div>
+
+  <div class="stats-row">
+    <div class="stat-card"><div class="stat-val" style="color:var(--gold)">142 ETH</div><div class="stat-lbl">Total Tips Today</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--blue)">1,847</div><div class="stat-lbl">Active Creators</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--green)">8.4 ETH</div><div class="stat-lbl">Top Earner Today</div></div>
+    <div class="stat-card"><div class="stat-val" style="color:var(--accent)">48.2K</div><div class="stat-lbl">Total Fans</div></div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="setTab(this,'cards')">Creator Cards</div>
+    <div class="tab" onclick="setTab(this,'table')">Leaderboard</div>
+  </div>
+
+  <div id="cards-view">
+    <div class="creator-grid" id="creator-grid"></div>
+  </div>
+
+  <div id="table-view" style="display:none">
+    <table class="lb-table">
+      <thead>
+        <tr>
+          <th>#</th>
+          <th>Creator</th>
+          <th>ETH Earned</th>
+          <th>Followers</th>
+          <th>Posts</th>
+          <th>Tip</th>
+        </tr>
+      </thead>
+      <tbody id="lb-body"></tbody>
+    </table>
+  </div>
+</main>
+
+</div>
+
+<div id="wallet-modal-slot"></div>
+<div id="tip-modal-slot"></div>
+<div id="toast-slot"></div>
+
+<script src="shared.js"></script>
+<script>
+document.getElementById('sidebar-nav').innerHTML = buildNav('creators.html');
+document.getElementById('wallet-modal-slot').innerHTML = walletModalHTML();
+document.getElementById('tip-modal-slot').innerHTML   = tipModalHTML();
+document.getElementById('toast-slot').innerHTML       = toastHTML();
+
+const CREATORS = [
+  { rank:1, name:'0xVictor_J.base',    initials:'VJ', gradient:'linear-gradient(135deg,#fbbf24,#f97316)', badge:'Creator',  team:'Real Madrid', league:'La Liga',        eth:'8.4',  followers:'14.2K', posts:284, wallet:'0xabc001' },
+  { rank:2, name:'0xBarcaVision.base', initials:'BV', gradient:'linear-gradient(135deg,#3b82f6,#1d4ed8)', badge:'Verified', team:'Barcelona',   league:'La Liga',        eth:'6.1',  followers:'11.8K', posts:210, wallet:'0xabc002' },
+  { rank:3, name:'0xKlopp_era.base',   initials:'KE', gradient:'linear-gradient(135deg,#ef4444,#dc2626)', badge:'Top Fan',  team:'Liverpool',   league:'Premier League', eth:'5.8',  followers:'9.4K',  posts:195, wallet:'0xabc003' },
+  { rank:4, name:'0xManUtd_DNA.base',  initials:'MU', gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', badge:'Creator',  team:'Man United',  league:'Premier League', eth:'3.2',  followers:'7.1K',  posts:142, wallet:'0xabc004' },
+  { rank:5, name:'0xDerby_Mode.base',  initials:'DM', gradient:'linear-gradient(135deg,#0ea5e9,#0284c7)', badge:'Creator',  team:'Dortmund',    league:'Bundesliga',     eth:'2.9',  followers:'6.3K',  posts:130, wallet:'0xabc005' },
+  { rank:6, name:'0xInter_Ultra.base', initials:'IU', gradient:'linear-gradient(135deg,#6366f1,#4f46e5)', badge:'Fan',      team:'Inter Milan', league:'Serie A',        eth:'2.1',  followers:'5.1K',  posts:98,  wallet:'0xabc006' },
+  { rank:7, name:'0xPSG_World.base',   initials:'PW', gradient:'linear-gradient(135deg,#06b6d4,#0891b2)', badge:'Creator',  team:'PSG',         league:'Ligue 1',        eth:'1.8',  followers:'4.8K',  posts:88,  wallet:'0xabc007' },
+  { rank:8, name:'0xBayern_DNA.base',  initials:'BD', gradient:'linear-gradient(135deg,#ef4444,#b91c1c)', badge:'Top Fan',  team:'Bayern',      league:'Bundesliga',     eth:'1.5',  followers:'4.2K',  posts:76,  wallet:'0xabc008' },
+];
+
+let filteredCreators = [...CREATORS];
+let following = new Set();
+let currentView = 'cards';
+
+function renderCards() {
+  const grid = document.getElementById('creator-grid');
+  grid.innerHTML = filteredCreators.map((c,i) => `
+    <div class="creator-card rank-${c.rank<=3?c.rank:'other'}" style="animation-delay:${i*.06}s">
+      <div class="creator-card-top">
+        <div class="creator-av-wrap">
+          <div class="creator-av" style="background:${c.gradient}">${c.initials}</div>
+          <div class="creator-rank-badge">${c.rank}</div>
+        </div>
+        <div class="creator-info">
+          <div class="creator-name">${escHtml(c.name)}</div>
+          <div class="creator-team">
+            <span class="badge badge-${c.badge.toLowerCase().replace(' ','')}">${c.badge}</span>
+            ${escHtml(c.team)} · ${escHtml(c.league)}
+          </div>
+        </div>
+      </div>
+      <div class="creator-stats">
+        <div class="cstat"><div class="cstat-val" style="color:var(--green)">${c.eth} ETH</div><div class="cstat-lbl">Earned</div></div>
+        <div class="cstat"><div class="cstat-val" style="color:var(--blue)">${c.followers}</div><div class="cstat-lbl">Followers</div></div>
+        <div class="cstat"><div class="cstat-val" style="color:var(--text)">${c.posts}</div><div class="cstat-lbl">Posts</div></div>
+      </div>
+      <div class="creator-actions">
+        <button class="btn-follow ${following.has(c.name)?'following':''}" onclick="toggleFollow(this,'${c.name}')">
+          ${following.has(c.name)?'✓ Following':'+ Follow'}
+        </button>
+        <button class="btn-tip-creator" onclick="openTipModal('${escHtml(c.name)}','${c.wallet}','${c.initials}','${c.gradient}')">
+          ⬡ Tip on Base
+        </button>
+      </div>
+    </div>`).join('');
+}
+
+function renderTable() {
+  const body = document.getElementById('lb-body');
+  const rankClass = r => r===1?'gold':r===2?'silver':r===3?'bronze':'';
+  body.innerHTML = filteredCreators.map(c => `
+    <tr>
+      <td><span class="lb-rank ${rankClass(c.rank)}">${c.rank}</span></td>
+      <td><div class="lb-creator-cell">
+        <div class="lb-av" style="background:${c.gradient}">${c.initials}</div>
+        <div><div class="lb-name">${escHtml(c.name)}</div><div class="lb-team">${escHtml(c.team)} · ${escHtml(c.league)}</div></div>
+      </div></td>
+      <td><span class="lb-eth">${c.eth} ETH</span></td>
+      <td><span class="lb-pts">${c.followers}</span></td>
+      <td><span class="lb-posts">${c.posts}</span></td>
+      <td><button class="btn-tip-creator" style="padding:6px 12px" onclick="openTipModal('${escHtml(c.name)}','${c.wallet}','${c.initials}','${c.gradient}')">⬡ Tip</button></td>
+    </tr>`).join('');
+}
+
+function setTab(el, view) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  currentView = view;
+  document.getElementById('cards-view').style.display = view==='cards'?'block':'none';
+  document.getElementById('table-view').style.display = view==='table'?'block':'none';
+  if (view==='table') renderTable();
+}
+
+function filterCreators(q) {
+  const s = q.toLowerCase();
+  filteredCreators = CREATORS.filter(c =>
+    c.name.toLowerCase().includes(s) ||
+    c.team.toLowerCase().includes(s) ||
+    c.league.toLowerCase().includes(s)
+  );
+  if (currentView==='cards') renderCards(); else renderTable();
+}
+
+function toggleFollow(btn, name) {
+  if (following.has(name)) { following.delete(name); btn.textContent='+ Follow'; btn.classList.remove('following'); showToast('Unfollowed'); }
+  else { following.add(name); btn.textContent='✓ Following'; btn.classList.add('following'); showToast(`Following ${name}!`); }
+}
+
+function onLeagueFilter(league) {
+  filteredCreators = league==='all' ? [...CREATORS] : CREATORS.filter(c=>c.league===league);
+  if (currentView==='cards') renderCards(); else renderTable();
+}
+
+window.addEventListener('load', renderCards);
+</script>
+</body>
+</html>
