@@ -6,7 +6,7 @@
 const API           = 'http://localhost:3001';
 const BASE_CHAIN_ID = '0x2105'; // Base Mainnet 8453
 const BASE_EXPLORER = 'https://basescan.org';
-const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000'; // replace after deploying
+const CONTRACT_ADDRESS = '0x1AAd46Ae1b0D0E888D591a8b328f58903785fC72'; // replace after deploying
 const CONTRACT_ABI = [
   "function tipCreator(address payable creatorWallet, string calldata postId) external payable",
   "function registerCreator(string calldata username) external",
