@@ -1,201 +1,851 @@
 <!DOCTYPE html>
 <html lang="en">
-<head> <meta name="base:app_id"content="69c32ee25262875b1be38c3e"/> <head>
+<head>
+<meta name="base:app_id" content="69c32ee25262875b1be38c3e"/>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
 <title>Base Football — Home Feed</title>
 <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
-<link rel="stylesheet" href="shared.css"/>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <style>
-/* ── FEED SPECIFIC ── */
-.feed-wrap{display:flex;flex-direction:column;}
-.stats-bar{display:flex;background:var(--card);border:1px solid var(--border);
-  border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;}
-.sbar-item{flex:1;padding:14px 16px;border-right:1px solid var(--border);text-align:center;}
-.sbar-item:last-child{border-right:none;}
-.sbar-val{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:1px;}
-.sbar-lbl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
-.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+/* ═══════════════════════════════════════
+   RESET & ROOT
+═══════════════════════════════════════ */
+:root {
+  --bg:#050608;--surface:#0d0f14;--card:#111318;
+  --border:#1e2130;--border2:#252a3a;
+  --blue:#0052ff;--blue-glow:#0052ff55;--blue-dim:#0039c0;
+  --accent:#00d4ff;--green:#00e676;--gold:#ffd166;--red:#ef4444;
+  --text:#e8ecf4;--muted:#6b7490;--muted2:#3d4460;
+  --radius:12px;--radius-lg:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg) !important;
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+}
 
-/* COMPOSE */
-.compose{background:var(--card);border:1px solid var(--border);
-  border-radius:var(--radius-lg);padding:18px;margin-bottom:20px;transition:border-color .2s;}
+/* ═══════════════════════════════════════
+   LAYOUT
+═══════════════════════════════════════ */
+.shell{
+  display:grid;
+  grid-template-columns:240px 1fr 300px;
+  grid-template-rows:60px 1fr;
+  min-height:100vh;
+}
+
+/* ═══════════════════════════════════════
+   TOPNAV
+═══════════════════════════════════════ */
+.topnav{
+  grid-column:1/-1;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:0 24px;
+  background:rgba(5,6,8,.96);
+  backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);
+  position:sticky;top:0;z-index:200;
+  height:60px;
+}
+.logo{
+  display:flex;align-items:center;gap:10px;
+  font-family:'Bebas Neue',sans-serif;font-size:22px;
+  letter-spacing:1px;cursor:pointer;
+  text-decoration:none;color:var(--text);
+  flex-shrink:0;
+}
+.logo-icon{
+  width:32px;height:32px;background:var(--blue);
+  border-radius:8px;display:grid;place-items:center;
+  font-size:16px;box-shadow:0 0 16px var(--blue-glow);
+}
+.logo span{color:var(--blue);}
+.nav-search{
+  flex:1;max-width:360px;margin:0 20px;position:relative;
+}
+.nav-search input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px 14px 8px 36px;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:13px;outline:none;
+  transition:border-color .2s;
+}
+.nav-search input:focus{border-color:var(--blue);}
+.nav-search input::placeholder{color:var(--muted);}
+.search-ico{
+  position:absolute;left:11px;top:50%;
+  transform:translateY(-50%);color:var(--muted);pointer-events:none;
+}
+.nav-right{display:flex;align-items:center;gap:8px;}
+.net-badge{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  padding:4px 10px;border-radius:99px;
+  background:rgba(0,82,255,.12);color:var(--blue);
+  border:1px solid rgba(0,82,255,.3);
+  display:none;align-items:center;gap:5px;
+}
+.net-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);animation:pulse 2s infinite;
+}
+.btn-wallet{
+  display:flex;align-items:center;gap:8px;
+  background:var(--blue);color:#fff;border:none;
+  border-radius:8px;padding:9px 16px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;
+  box-shadow:0 0 16px var(--blue-glow);white-space:nowrap;
+}
+.btn-wallet:hover{background:var(--blue-dim);}
+.btn-wallet.connected{
+  background:var(--surface);border:1px solid var(--green);
+  color:var(--green);box-shadow:none;
+}
+
+/* ═══════════════════════════════════════
+   LEFT SIDEBAR
+═══════════════════════════════════════ */
+.sidebar-l{
+  padding:20px 14px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;
+  overflow-y:auto;background:var(--surface);
+}
+.s-label{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--muted);text-transform:uppercase;
+  letter-spacing:1.5px;padding:10px 10px 5px;
+}
+.nav-item{
+  display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--radius);cursor:pointer;font-size:13px;
+  color:var(--muted);font-weight:500;transition:all .15s;
+  position:relative;text-decoration:none;user-select:none;
+}
+.nav-item:hover{background:var(--card);color:var(--text);}
+.nav-item.active{background:rgba(0,82,255,.12);color:var(--blue);}
+.nav-item.active::before{
+  content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:3px;background:var(--blue);border-radius:0 3px 3px 0;
+}
+.league-item{
+  display:flex;align-items:center;gap:10px;padding:8px 12px;
+  border-radius:var(--radius);cursor:pointer;font-size:13px;
+  color:var(--muted);transition:all .15s;user-select:none;
+}
+.league-item:hover,.league-item.active{
+  background:var(--card);color:var(--text);
+}
+.l-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ═══════════════════════════════════════
+   MAIN FEED
+═══════════════════════════════════════ */
+.feed{padding:20px;overflow-y:auto;display:flex;flex-direction:column;}
+
+/* Stats bar */
+.stats-bar{
+  display:flex;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;margin-bottom:20px;
+}
+.sbar-item{
+  flex:1;padding:14px 12px;border-right:1px solid var(--border);
+  text-align:center;
+}
+.sbar-item:last-child{border-right:none;}
+.sbar-val{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;}
+.sbar-lbl{font-size:10px;color:var(--muted);margin-top:2px;letter-spacing:.5px;}
+
+/* Tabs */
+.feed-tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab{
+  padding:10px 18px;font-size:13px;font-weight:500;color:var(--muted);
+  cursor:pointer;border-bottom:2px solid transparent;
+  margin-bottom:-1px;transition:all .2s;user-select:none;
+}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+/* ═══════════════════════════════════════
+   COMPOSE BOX
+═══════════════════════════════════════ */
+.compose{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);padding:18px;
+  margin-bottom:20px;transition:border-color .2s;
+}
 .compose:focus-within{border-color:var(--border2);}
 .compose-row{display:flex;gap:12px;align-items:flex-start;}
-.my-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;
-  place-items:center;font-family:'Bebas Neue',sans-serif;font-size:15px;
-  background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;}
-.compose-text{flex:1;background:none;border:none;outline:none;color:var(--text);
-  font-family:'DM Sans',sans-serif;font-size:14px;resize:none;padding-top:6px;min-height:64px;line-height:1.6;}
+.my-av{
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:15px;
+  background:linear-gradient(135deg,var(--blue),var(--accent));color:#fff;
+}
+.compose-text{
+  flex:1;background:none;border:none;outline:none;
+  color:var(--text);font-family:'DM Sans',sans-serif;
+  font-size:14px;resize:none;padding-top:6px;
+  min-height:64px;line-height:1.6;
+}
 .compose-text::placeholder{color:var(--muted2);}
+
+/* Media preview */
 .media-preview-grid{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
-.preview-thumb{position:relative;border-radius:10px;overflow:hidden;border:1px solid var(--border);}
+.preview-thumb{
+  position:relative;border-radius:10px;overflow:hidden;
+  border:1px solid var(--border);
+}
 .preview-thumb img{width:150px;height:110px;object-fit:cover;display:block;}
 .preview-thumb video{width:200px;height:140px;object-fit:cover;display:block;}
-.preview-remove{position:absolute;top:5px;right:5px;width:24px;height:24px;
-  background:rgba(0,0,0,.75);border:none;border-radius:50%;color:#fff;
-  font-size:13px;cursor:pointer;display:grid;place-items:center;transition:background .15s;}
+.preview-remove{
+  position:absolute;top:5px;right:5px;width:24px;height:24px;
+  background:rgba(0,0,0,.8);border:none;border-radius:50%;
+  color:#fff;font-size:13px;cursor:pointer;display:grid;
+  place-items:center;transition:background .15s;
+}
 .preview-remove:hover{background:var(--red);}
-.vid-thumb-label{position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.65);
-  color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;}
-.compose-footer{display:flex;align-items:center;gap:8px;margin-top:14px;
-  padding-top:14px;border-top:1px solid var(--border);flex-wrap:wrap;}
-.media-btn{display:flex;align-items:center;gap:6px;padding:7px 14px;border-radius:8px;
-  border:1px solid var(--border);background:none;color:var(--muted);
-  font-family:'DM Sans',sans-serif;font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;}
+.vid-thumb-label{
+  position:absolute;bottom:6px;left:6px;background:rgba(0,0,0,.7);
+  color:#fff;font-size:10px;font-weight:600;padding:2px 7px;border-radius:5px;
+}
+
+/* Compose footer */
+.compose-footer{
+  display:flex;align-items:center;gap:8px;
+  margin-top:14px;padding-top:14px;
+  border-top:1px solid var(--border);flex-wrap:wrap;
+}
+.media-btn{
+  display:flex;align-items:center;gap:6px;padding:8px 14px;
+  border-radius:8px;border:1px solid var(--border);background:none;
+  color:var(--muted);font-family:'DM Sans',sans-serif;
+  font-size:12px;font-weight:500;cursor:pointer;transition:all .15s;
+}
 .media-btn:hover{border-color:var(--blue);color:var(--blue);}
 .media-btn.has-media{border-color:var(--green);color:var(--green);}
 .char-left{font-size:11px;color:var(--muted);margin-left:auto;}
 .char-left.warn{color:var(--red);}
+.post-btn{
+  background:var(--blue);color:#fff;border:none;
+  border-radius:8px;padding:9px 20px;
+  font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;box-shadow:0 0 12px var(--blue-glow);transition:all .2s;
+}
+.post-btn:hover{background:var(--blue-dim);}
 
-/* POST CARDS */
-.post-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
-  margin-bottom:16px;overflow:hidden;transition:border-color .2s,transform .15s;animation:fadeUp .4s ease both;}
+/* ═══════════════════════════════════════
+   POST CARDS
+═══════════════════════════════════════ */
+.post-card{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);margin-bottom:16px;
+  overflow:hidden;transition:border-color .2s,transform .15s;
+  animation:fadeUp .4s ease both;
+}
 .post-card:hover{border-color:var(--border2);transform:translateY(-1px);}
 .post-inner{padding:20px 20px 14px;}
 .post-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
-.post-av{width:40px;height:40px;border-radius:50%;flex-shrink:0;display:grid;
-  place-items:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;}
+.post-av{
+  width:40px;height:40px;border-radius:50%;flex-shrink:0;
+  display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:14px;color:#fff;
+}
 .post-meta{flex:1;min-width:0;}
-.post-author-row{font-family:'JetBrains Mono',monospace;font-size:12.5px;font-weight:600;
-  color:var(--text);display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.post-author-row{
+  font-family:'JetBrains Mono',monospace;font-size:12.5px;
+  font-weight:600;color:var(--text);
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;
+}
 .post-sub{display:flex;align-items:center;gap:6px;margin-top:3px;flex-wrap:wrap;}
-.post-time{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;flex-shrink:0;}
-.team-pill{font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;
-  background:rgba(0,82,255,.12);color:#60a5fa;border:1px solid rgba(0,82,255,.3);}
+.post-time{font-size:11px;color:var(--muted);margin-left:auto;white-space:nowrap;}
+.pbadge{
+  font-family:'JetBrains Mono',monospace;font-size:9px;
+  padding:2px 7px;border-radius:99px;border:1px solid;
+}
+.pbadge-creator{border-color:var(--gold);color:var(--gold);}
+.pbadge-topfan{border-color:var(--accent);color:var(--accent);}
+.pbadge-verified{border-color:var(--green);color:var(--green);}
+.pbadge-fan{border-color:var(--muted);color:var(--muted);}
+.team-pill{
+  font-size:10px;font-weight:600;padding:2px 8px;border-radius:99px;
+  background:rgba(0,82,255,.12);color:#60a5fa;
+  border:1px solid rgba(0,82,255,.3);
+}
 .league-lbl{font-size:10px;color:var(--muted);}
 .post-body{font-size:14px;line-height:1.65;color:#c8cedd;margin-bottom:4px;}
 
-/* POST MEDIA */
-.media-single img,.media-single video{width:100%;max-height:500px;
-  object-fit:cover;display:block;border-radius:10px;cursor:pointer;margin-top:10px;}
-.media-grid-2{display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:10px;overflow:hidden;margin-top:10px;}
-.media-grid-2 img,.media-grid-2 video{width:100%;height:220px;object-fit:cover;display:block;cursor:pointer;}
-.media-grid-3{display:grid;grid-template-columns:1fr 1fr;gap:3px;border-radius:10px;overflow:hidden;margin-top:10px;}
-.media-main-cell img,.media-main-cell video{width:100%;height:282px;object-fit:cover;display:block;cursor:pointer;}
-.media-sub-cell img,.media-sub-cell video{width:100%;height:138px;object-fit:cover;display:block;cursor:pointer;}
+/* Post media */
+.media-single img,.media-single video{
+  width:100%;max-height:500px;object-fit:cover;
+  display:block;border-radius:10px;cursor:pointer;margin-top:10px;
+}
+.media-grid-2{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:3px;border-radius:10px;overflow:hidden;margin-top:10px;
+}
+.media-grid-2 img,.media-grid-2 video{
+  width:100%;height:220px;object-fit:cover;display:block;cursor:pointer;
+}
+.media-grid-3{
+  display:grid;grid-template-columns:1fr 1fr;
+  gap:3px;border-radius:10px;overflow:hidden;margin-top:10px;
+}
 .media-main-cell{grid-row:1/3;}
+.media-main-cell img,.media-main-cell video{
+  width:100%;height:282px;object-fit:cover;display:block;cursor:pointer;
+}
+.media-sub-cell img,.media-sub-cell video{
+  width:100%;height:138px;object-fit:cover;display:block;cursor:pointer;
+}
 .vid-play{position:relative;}
-.vid-play::before{content:'▶';position:absolute;top:8px;left:8px;z-index:1;
-  background:rgba(0,0,0,.6);color:#fff;font-size:11px;padding:3px 8px;border-radius:5px;}
+.vid-play::before{
+  content:'▶';position:absolute;top:8px;left:8px;z-index:1;
+  background:rgba(0,0,0,.6);color:#fff;font-size:11px;
+  padding:3px 8px;border-radius:5px;
+}
 .media-more{position:relative;cursor:pointer;}
-.media-more-overlay{position:absolute;inset:0;background:rgba(0,0,0,.55);display:flex;
-  align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;
-  font-size:28px;color:#fff;letter-spacing:1px;pointer-events:none;}
+.media-more-overlay{
+  position:absolute;inset:0;background:rgba(0,0,0,.55);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Bebas Neue',sans-serif;font-size:28px;
+  color:#fff;letter-spacing:1px;pointer-events:none;
+}
 
-/* POST ACTIONS */
-.post-actions{display:flex;align-items:center;gap:4px;padding:10px 20px 12px;border-top:1px solid var(--border);}
-.act-btn{display:flex;align-items:center;gap:6px;padding:7px 12px;border-radius:8px;
-  border:none;background:none;color:var(--muted);font-family:'DM Sans',sans-serif;
-  font-size:12px;cursor:pointer;transition:all .15s;}
+/* Post actions */
+.post-actions{
+  display:flex;align-items:center;gap:4px;
+  padding:10px 20px 12px;border-top:1px solid var(--border);
+}
+.act-btn{
+  display:flex;align-items:center;gap:6px;padding:7px 10px;
+  border-radius:8px;border:none;background:none;
+  color:var(--muted);font-family:'DM Sans',sans-serif;
+  font-size:12px;cursor:pointer;transition:all .15s;
+}
 .act-btn:hover{background:rgba(255,255,255,.04);color:var(--text);}
 .act-btn.liked{color:var(--red);}
-.tip-btn{margin-left:auto;display:flex;align-items:center;gap:7px;padding:8px 16px;
-  border-radius:9px;border:1px solid rgba(0,230,118,.3);background:rgba(0,230,118,.05);
-  color:var(--green);font-family:'JetBrains Mono',monospace;font-size:11px;
-  font-weight:600;cursor:pointer;transition:all .2s;}
-.tip-btn:hover{border-color:var(--green);background:rgba(0,230,118,.1);transform:translateY(-1px);}
+.tip-btn{
+  margin-left:auto;display:flex;align-items:center;gap:6px;
+  padding:8px 14px;border-radius:9px;
+  border:1px solid rgba(0,230,118,.3);
+  background:rgba(0,230,118,.05);color:var(--green);
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  font-weight:600;cursor:pointer;transition:all .2s;
+}
+.tip-btn:hover{
+  border-color:var(--green);background:rgba(0,230,118,.1);
+  transform:translateY(-1px);
+}
 .tip-badge{font-size:9px;color:var(--muted);font-weight:400;}
 
-/* LIGHTBOX */
-.lightbox{display:none;position:fixed;inset:0;background:rgba(0,0,0,.96);
-  z-index:2000;align-items:center;justify-content:center;}
-.lightbox.open{display:flex;}
-.lb-close{position:absolute;top:18px;right:22px;background:none;border:none;
-  color:#fff;font-size:30px;cursor:pointer;}
-.lightbox img,.lightbox video{max-width:90vw;max-height:90vh;border-radius:10px;}
-
-/* TRENDING WIDGET */
-.cr-row{display:flex;align-items:center;gap:10px;padding:10px 16px;cursor:pointer;transition:background .15s;}
+/* ═══════════════════════════════════════
+   RIGHT SIDEBAR
+═══════════════════════════════════════ */
+.sidebar-r{
+  padding:20px 14px;border-left:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;
+  gap:20px;background:var(--surface);
+}
+.widget{
+  background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-lg);overflow:hidden;
+}
+.widget-head{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);
+}
+.widget-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;}
+.widget-link{font-size:11px;color:var(--blue);cursor:pointer;font-weight:500;text-decoration:none;}
+.cr-row{
+  display:flex;align-items:center;gap:10px;padding:10px 14px;
+  cursor:pointer;transition:background .15s;
+}
 .cr-row:hover{background:rgba(255,255,255,.02);}
-.cr-av{width:32px;height:32px;border-radius:50%;display:grid;place-items:center;
-  font-family:'Bebas Neue',sans-serif;font-size:12px;color:#fff;flex-shrink:0;}
+.cr-av{
+  width:32px;height:32px;border-radius:50%;display:grid;
+  place-items:center;font-family:'Bebas Neue',sans-serif;
+  font-size:12px;color:#fff;flex-shrink:0;
+}
 .cr-info{flex:1;min-width:0;}
-.cr-name{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text);}
+.cr-name{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  font-weight:600;color:var(--text);white-space:nowrap;
+  overflow:hidden;text-overflow:ellipsis;
+}
 .cr-stats{font-size:10px;color:var(--muted);margin-top:1px;}
-.cr-earn{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--green);flex-shrink:0;}
-.cr-rank{font-family:'Bebas Neue',sans-serif;font-size:18px;color:var(--muted2);width:20px;text-align:center;flex-shrink:0;}
+.cr-earn{
+  font-family:'JetBrains Mono',monospace;font-size:11px;
+  font-weight:600;color:var(--green);flex-shrink:0;
+}
+.cr-rank{
+  font-family:'Bebas Neue',sans-serif;font-size:18px;
+  color:var(--muted2);width:20px;text-align:center;flex-shrink:0;
+}
 .cr-rank.top{color:var(--gold);}
+.trend-item{padding:10px 14px;cursor:pointer;transition:background .15s;}
+.trend-item:hover{background:rgba(255,255,255,.02);}
+.trend-tag{
+  font-family:'JetBrains Mono',monospace;font-size:12px;
+  font-weight:600;color:var(--blue);
+}
+.trend-count{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ═══════════════════════════════════════
+   MODALS
+═══════════════════════════════════════ */
+.overlay{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.85);backdrop-filter:blur(8px);
+  z-index:1000;align-items:center;justify-content:center;padding:20px;
+}
+.overlay.open{display:flex;}
+.modal{
+  background:var(--card);border:1px solid var(--border2);
+  border-radius:20px;padding:28px;width:100%;max-width:420px;
+  animation:popIn .25s ease;max-height:90vh;overflow-y:auto;
+}
+.modal-title{
+  font-family:'Bebas Neue',sans-serif;font-size:26px;
+  letter-spacing:1px;margin-bottom:6px;
+}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.55;}
+
+/* Wallet modal */
+.wallet-opt{
+  display:flex;align-items:center;gap:14px;padding:15px;
+  border:1px solid var(--border);border-radius:13px;
+  cursor:pointer;transition:all .2s;margin-bottom:10px;
+}
+.wallet-opt:hover{border-color:var(--blue);background:rgba(0,82,255,.05);}
+.wallet-ico{
+  width:44px;height:44px;border-radius:12px;
+  display:grid;place-items:center;font-size:24px;flex-shrink:0;
+}
+.wallet-opt-name{font-size:14px;font-weight:600;color:var(--text);}
+.wallet-opt-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* Tip modal */
+.tip-creator-card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px;margin-bottom:20px;
+  display:flex;align-items:center;gap:12px;
+}
+.tip-cr-av{
+  width:44px;height:44px;border-radius:50%;display:grid;
+  place-items:center;font-family:'Bebas Neue',sans-serif;
+  font-size:16px;color:#fff;flex-shrink:0;
+}
+.tip-cr-name{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text);}
+.tip-cr-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.tip-section-lbl{
+  font-size:11px;color:var(--muted);font-weight:600;
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;
+}
+.tip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.tip-tile{
+  padding:12px 8px;border:1px solid var(--border);
+  border-radius:10px;text-align:center;cursor:pointer;
+  transition:all .15s;user-select:none;
+}
+.tip-tile:hover,.tip-tile.sel{
+  border-color:var(--green);background:rgba(0,230,118,.07);
+}
+.tip-tile-eth{
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  font-weight:700;color:var(--text);
+}
+.tip-tile.sel .tip-tile-eth{color:var(--green);}
+.tip-tile-usd{font-size:10px;color:var(--muted);margin-top:2px;}
+.tip-divider{
+  display:flex;align-items:center;gap:10px;
+  margin-bottom:12px;font-size:11px;color:var(--muted);
+}
+.tip-divider::before,.tip-divider::after{
+  content:'';flex:1;height:1px;background:var(--border);
+}
+.custom-wrap{position:relative;margin-bottom:16px;}
+.custom-wrap input{
+  width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:11px 48px 11px 14px;color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:13px;
+  outline:none;transition:border-color .2s;
+}
+.custom-wrap input:focus{border-color:var(--green);}
+.custom-wrap input::placeholder{color:var(--muted2);}
+.custom-unit{
+  position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);
+}
+.gas-note{
+  background:rgba(0,82,255,.07);border:1px solid rgba(0,82,255,.2);
+  border-radius:10px;padding:12px 14px;margin-bottom:16px;
+  font-size:12px;color:var(--muted);line-height:1.55;
+}
+.gas-note strong{color:var(--blue);}
+.tx-box{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:12px 14px;margin-bottom:14px;
+  font-size:12px;color:var(--muted);text-align:center;display:none;
+}
+.tx-box.show{display:block;}
+.tx-link{
+  font-family:'JetBrains Mono',monospace;font-size:10px;
+  color:var(--blue);cursor:pointer;text-decoration:underline;
+}
+.modal-btns{display:flex;gap:10px;}
+.btn-cancel{
+  flex:1;padding:11px;border:1px solid var(--border);
+  border-radius:10px;background:none;color:var(--muted);
+  font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;
+}
+.btn-cancel:hover{border-color:var(--border2);color:var(--text);}
+.btn-send{
+  flex:2;padding:11px;border:none;border-radius:10px;
+  background:var(--green);color:#000;font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;
+  display:flex;align-items:center;justify-content:center;gap:8px;
+}
+.btn-send:hover{opacity:.88;}
+.btn-send:disabled{opacity:.5;cursor:not-allowed;}
+.btn-primary{
+  flex:2;padding:11px;border:none;border-radius:10px;
+  background:var(--blue);color:#fff;font-family:'DM Sans',sans-serif;
+  font-size:14px;font-weight:700;cursor:pointer;
+  box-shadow:0 0 12px var(--blue-glow);transition:all .2s;
+}
+.btn-primary:hover{background:var(--blue-dim);}
+
+/* Lightbox */
+.lightbox{
+  display:none;position:fixed;inset:0;
+  background:rgba(0,0,0,.97);z-index:2000;
+  align-items:center;justify-content:center;
+}
+.lightbox.open{display:flex;}
+.lb-close{
+  position:absolute;top:18px;right:22px;background:none;
+  border:none;color:#fff;font-size:30px;cursor:pointer;
+}
+.lightbox img,.lightbox video{
+  max-width:90vw;max-height:90vh;border-radius:10px;
+}
+
+/* Team tag modal */
+.team-grid{
+  display:grid;grid-template-columns:repeat(2,1fr);
+  gap:8px;max-height:300px;overflow-y:auto;margin-bottom:16px;
+}
+.team-opt{
+  padding:10px 12px;border:1px solid var(--border);
+  border-radius:10px;cursor:pointer;transition:all .15s;
+  font-size:13px;color:var(--text);
+}
+.team-opt:hover,.team-opt.sel{
+  border-color:var(--blue);background:rgba(0,82,255,.08);color:var(--blue);
+}
+
+/* Toast */
+.toast{
+  position:fixed;bottom:28px;right:28px;background:var(--card);
+  border-radius:12px;padding:14px 20px;font-size:13px;font-weight:500;
+  display:flex;align-items:center;gap:8px;z-index:3000;
+  transform:translateY(80px);opacity:0;max-width:360px;
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  border:1px solid var(--green);color:var(--green);
+  box-shadow:0 8px 32px rgba(0,230,118,.15);
+}
+.toast.err{
+  border-color:var(--red);color:var(--red);
+  box-shadow:0 8px 32px rgba(239,68,68,.15);
+}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* Empty state */
+.empty{text-align:center;padding:56px 20px;color:var(--muted);}
+.empty-ico{font-size:52px;margin-bottom:14px;}
+.empty-text{font-size:14px;line-height:1.6;}
+
+/* Spinner */
+.spin{
+  width:18px;height:18px;border:2px solid rgba(0,0,0,.2);
+  border-top-color:#000;border-radius:50%;
+  animation:rotate .7s linear infinite;display:inline-block;
+}
+
+/* ═══════════════════════════════════════
+   ANIMATIONS
+═══════════════════════════════════════ */
+@keyframes fadeUp{
+  from{opacity:0;transform:translateY(14px);}
+  to{opacity:1;transform:translateY(0);}
+}
+@keyframes popIn{
+  from{transform:scale(.92);opacity:0;}
+  to{transform:scale(1);opacity:1;}
+}
+@keyframes rotate{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE — TABLET
+═══════════════════════════════════════ */
+@media(max-width:1100px){
+  .shell{grid-template-columns:220px 1fr;}
+  .sidebar-r{display:none;}
+}
+
+/* ═══════════════════════════════════════
+   RESPONSIVE — MOBILE
+═══════════════════════════════════════ */
+@media(max-width:720px){
+  .shell{
+    grid-template-columns:1fr;
+    grid-template-rows:60px 1fr;
+  }
+  .sidebar-l{display:none;}
+  .feed{padding:12px;}
+  .topnav{padding:0 12px;}
+  .nav-search{display:none;}
+  .stats-bar{display:none;}
+  .sbar-val{font-size:16px;}
+  .post-inner{padding:14px 14px 10px;}
+  .post-actions{padding:8px 14px 10px;}
+  .media-btn span{display:none;}
+  .media-btn{padding:8px 10px;}
+  .feed-tabs{overflow-x:auto;}
+  .tab{padding:10px 14px;white-space:nowrap;}
+  .modal{padding:20px;}
+  .tip-grid{grid-template-columns:repeat(2,1fr);}
+}
 </style>
 </head>
 <body>
 <div class="shell">
 
-<!-- TOPNAV -->
+<!-- ═══════════ TOPNAV ═══════════ -->
 <nav class="topnav">
   <a class="logo" href="index.html">
-    <div class="logo-icon">⚽</div>BASE <span>FOOTBALL</span>
+    <div class="logo-icon">⚽</div>
+    BASE <span>FOOTBALL</span>
   </a>
   <div class="nav-search">
-    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+    </svg>
     <input type="text" placeholder="Search creators, teams, topics…"/>
   </div>
   <div class="nav-right">
     <span class="net-badge" id="net-badge"><span class="net-dot"></span>Base Mainnet</span>
     <button class="btn-wallet" id="wallet-btn" onclick="openWalletModal()">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+        <rect x="2" y="7" width="20" height="15" rx="2"/>
+        <path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/>
+      </svg>
       <span id="wallet-text">Connect Wallet</span>
     </button>
   </div>
 </nav>
 
-<!-- LEFT SIDEBAR -->
-<aside class="sidebar-l" id="sidebar-nav"></aside>
+<!-- ═══════════ LEFT SIDEBAR ═══════════ -->
+<aside class="sidebar-l">
+  <div class="s-label">Navigation</div>
+  <a href="index.html" class="nav-item active">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+      <polyline points="9 22 9 12 15 12 15 22"/>
+    </svg>
+    Home Feed
+  </a>
+  <a href="creators.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+    Top Creators
+  </a>
+  <a href="matches.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <circle cx="12" cy="12" r="10"/>
+      <polyline points="12 6 12 12 16 14"/>
+    </svg>
+    Live Matches
+  </a>
+  <a href="earnings.html" class="nav-item">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <line x1="12" y1="1" x2="12" y2="23"/>
+      <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+    </svg>
+    Earnings
+  </a>
 
-<!-- MAIN FEED -->
-<main class="page feed-wrap">
+  <div class="s-label" style="margin-top:8px">Leagues</div>
+  <div class="league-item active" onclick="filterLeague(this,'all')">
+    <div class="l-dot" style="background:#e8ecf4"></div>All Leagues
+  </div>
+  <div class="league-item" onclick="filterLeague(this,'Champions League')">
+    <div class="l-dot" style="background:#3B82F6"></div>Champions League
+  </div>
+  <div class="league-item" onclick="filterLeague(this,'Premier League')">
+    <div class="l-dot" style="background:#7C3AED"></div>Premier League
+  </div>
+  <div class="league-item" onclick="filterLeague(this,'La Liga')">
+    <div class="l-dot" style="background:#EF4444"></div>La Liga
+  </div>
+  <div class="league-item" onclick="filterLeague(this,'Serie A')">
+    <div class="l-dot" style="background:#22C55E"></div>Serie A
+  </div>
+  <div class="league-item" onclick="filterLeague(this,'Bundesliga')">
+    <div class="l-dot" style="background:#F59E0B"></div>Bundesliga
+  </div>
+  <div class="league-item" onclick="filterLeague(this,'Ligue 1')">
+    <div class="l-dot" style="background:#0EA5E9"></div>Ligue 1
+  </div>
+</aside>
+
+<!-- ═══════════ MAIN FEED ═══════════ -->
+<main class="feed">
+
+  <!-- Stats -->
   <div class="stats-bar">
-    <div class="sbar-item"><div class="sbar-val" style="color:var(--blue)" id="s-fans">24.8K</div><div class="sbar-lbl">Active Fans</div></div>
-    <div class="sbar-item"><div class="sbar-val" style="color:var(--gold)">142 ETH</div><div class="sbar-lbl">Tips Today</div></div>
-    <div class="sbar-item"><div class="sbar-val" style="color:var(--green)">1,284</div><div class="sbar-lbl">Posts Today</div></div>
-    <div class="sbar-item"><div class="sbar-val" style="color:var(--accent)">38</div><div class="sbar-lbl">Live Matches</div></div>
+    <div class="sbar-item">
+      <div class="sbar-val" style="color:var(--blue)" id="s-fans">24.8K</div>
+      <div class="sbar-lbl">Active Fans</div>
+    </div>
+    <div class="sbar-item">
+      <div class="sbar-val" style="color:var(--gold)">142 ETH</div>
+      <div class="sbar-lbl">Tips Today</div>
+    </div>
+    <div class="sbar-item">
+      <div class="sbar-val" style="color:var(--green)">1,284</div>
+      <div class="sbar-lbl">Posts Today</div>
+    </div>
+    <div class="sbar-item">
+      <div class="sbar-val" style="color:var(--accent)">38</div>
+      <div class="sbar-lbl">Live Matches</div>
+    </div>
   </div>
 
-  <div class="tabs">
+  <!-- Tabs -->
+  <div class="feed-tabs">
     <div class="tab active" onclick="setTab(this,'all')">For You</div>
     <div class="tab" onclick="setTab(this,'text')">Updates</div>
     <div class="tab" onclick="setTab(this,'image')">Photos</div>
     <div class="tab" onclick="setTab(this,'video')">Videos</div>
   </div>
 
-  <!-- COMPOSE -->
+  <!-- Compose -->
   <div class="compose">
     <div class="compose-row">
       <div class="my-av" id="my-av">⚽</div>
-      <textarea class="compose-text" id="post-text"
+      <textarea
+        class="compose-text"
+        id="post-text"
         placeholder="Share your thoughts on the beautiful game… ⚽"
-        maxlength="500" oninput="onTextInput()" rows="3"></textarea>
+        maxlength="500"
+        oninput="onTextInput()"
+        rows="3"
+      ></textarea>
     </div>
     <div class="media-preview-grid" id="preview-grid"></div>
     <div class="compose-footer">
-      <button class="media-btn" id="photo-btn" onclick="document.getElementById('img-input').click()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-        Photo
+      <!-- PHOTO BUTTON — opens gallery -->
+      <button class="media-btn" id="photo-btn"
+        onclick="document.getElementById('img-file-input').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <rect x="3" y="3" width="18" height="18" rx="2"/>
+          <circle cx="8.5" cy="8.5" r="1.5"/>
+          <polyline points="21 15 16 10 5 21"/>
+        </svg>
+        <span>Photo</span>
       </button>
-      <button class="media-btn" id="video-btn" onclick="document.getElementById('vid-input').click()">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
-        Video
+
+      <!-- VIDEO BUTTON — opens gallery -->
+      <button class="media-btn" id="video-btn"
+        onclick="document.getElementById('vid-file-input').click()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polygon points="23 7 16 12 23 17 23 7"/>
+          <rect x="1" y="5" width="15" height="14" rx="2"/>
+        </svg>
+        <span>Video</span>
       </button>
-      <button class="media-btn" onclick="showToast('Tag your team when posting!')">🏷️ Team Tag</button>
+
+      <!-- TEAM TAG BUTTON -->
+      <button class="media-btn" id="tag-btn" onclick="openTeamTagModal()">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"/>
+          <line x1="7" y1="7" x2="7.01" y2="7"/>
+        </svg>
+        <span id="tag-btn-label">Team Tag</span>
+      </button>
+
       <span class="char-left" id="char-left">500</span>
-      <button class="btn-primary" onclick="submitPost()">Post to Base</button>
+      <button class="post-btn" onclick="submitPost()">Post to Base</button>
     </div>
   </div>
-  <input type="file" id="img-input" accept="image/*" multiple style="display:none" onchange="onImagesSelected(event)"/>
-  <input type="file" id="vid-input" accept="video/*" style="display:none" onchange="onVideoSelected(event)"/>
 
+  <!-- Hidden file inputs -->
+  <input type="file" id="img-file-input"
+    accept="image/jpeg,image/png,image/gif,image/webp"
+    multiple style="display:none"
+    onchange="onImagesSelected(event)"/>
+  <input type="file" id="vid-file-input"
+    accept="video/mp4,video/webm,video/ogg,video/quicktime"
+    style="display:none"
+    onchange="onVideoSelected(event)"/>
+
+  <!-- Posts feed -->
   <div id="posts-feed"></div>
 </main>
 
-<!-- RIGHT SIDEBAR -->
+<!-- ═══════════ RIGHT SIDEBAR ═══════════ -->
 <aside class="sidebar-r">
   <div class="widget">
-    <div class="widget-head"><span class="widget-title">Top Creators</span><a href="creators.html" class="widget-link">View All →</a></div>
-    <div class="cr-row"><span class="cr-rank top">1</span><div class="cr-av" style="background:linear-gradient(135deg,#fbbf24,#f97316)">VJ</div><div class="cr-info"><div class="cr-name">0xVictor_J</div><div class="cr-stats">Real Madrid · 14.2K</div></div><div class="cr-earn">8.4 ETH</div></div>
-    <div class="cr-row"><span class="cr-rank top">2</span><div class="cr-av" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">BV</div><div class="cr-info"><div class="cr-name">0xBarcaVision</div><div class="cr-stats">Barcelona · 11.8K</div></div><div class="cr-earn">6.1 ETH</div></div>
-    <div class="cr-row"><span class="cr-rank top">3</span><div class="cr-av" style="background:linear-gradient(135deg,#ef4444,#dc2626)">KE</div><div class="cr-info"><div class="cr-name">0xKlopp_era</div><div class="cr-stats">Liverpool · 9.4K</div></div><div class="cr-earn">5.8 ETH</div></div>
+    <div class="widget-head">
+      <span class="widget-title">Top Creators</span>
+      <a href="creators.html" class="widget-link">View All →</a>
+    </div>
+    <div class="cr-row">
+      <span class="cr-rank top">1</span>
+      <div class="cr-av" style="background:linear-gradient(135deg,#fbbf24,#f97316)">VJ</div>
+      <div class="cr-info"><div class="cr-name">0xVictor_J</div><div class="cr-stats">Real Madrid · 14.2K</div></div>
+      <div class="cr-earn">8.4 ETH</div>
+    </div>
+    <div class="cr-row">
+      <span class="cr-rank top">2</span>
+      <div class="cr-av" style="background:linear-gradient(135deg,#3b82f6,#1d4ed8)">BV</div>
+      <div class="cr-info"><div class="cr-name">0xBarcaVision</div><div class="cr-stats">Barcelona · 11.8K</div></div>
+      <div class="cr-earn">6.1 ETH</div>
+    </div>
+    <div class="cr-row">
+      <span class="cr-rank top">3</span>
+      <div class="cr-av" style="background:linear-gradient(135deg,#ef4444,#dc2626)">KE</div>
+      <div class="cr-info"><div class="cr-name">0xKlopp_era</div><div class="cr-stats">Liverpool · 9.4K</div></div>
+      <div class="cr-earn">5.8 ETH</div>
+    </div>
+    <div class="cr-row">
+      <span class="cr-rank">4</span>
+      <div class="cr-av" style="background:linear-gradient(135deg,#8b5cf6,#6d28d9)">MU</div>
+      <div class="cr-info"><div class="cr-name">0xManUtd_DNA</div><div class="cr-stats">Man United · 7.1K</div></div>
+      <div class="cr-earn">3.2 ETH</div>
+    </div>
+    <div class="cr-row">
+      <span class="cr-rank">5</span>
+      <div class="cr-av" style="background:linear-gradient(135deg,#0ea5e9,#0284c7)">DM</div>
+      <div class="cr-info"><div class="cr-name">0xDerby_Mode</div><div class="cr-stats">Dortmund · 6.3K</div></div>
+      <div class="cr-earn">2.9 ETH</div>
+    </div>
   </div>
+
   <div class="widget">
     <div class="widget-head"><span class="widget-title">Trending</span></div>
     <div class="trend-item"><div class="trend-tag">#UCLFinal</div><div class="trend-count">8,914 posts</div></div>
@@ -206,45 +856,274 @@
   </div>
 </aside>
 
-</div><!-- end shell -->
+</div><!-- end .shell -->
 
+<!-- ═══════════ WALLET MODAL ═══════════ -->
+<div class="overlay" id="wallet-modal" onclick="if(event.target===this)closeModal('wallet-modal')">
+  <div class="modal">
+    <div class="modal-title">Connect Wallet</div>
+    <div class="modal-sub">Connect to post, tip creators and earn on <strong style="color:var(--blue)">Base Mainnet</strong>.</div>
+    <div class="wallet-opt" onclick="connectWallet('metamask')">
+      <div class="wallet-ico" style="background:rgba(246,133,27,.12)">🦊</div>
+      <div>
+        <div class="wallet-opt-name">MetaMask</div>
+        <div class="wallet-opt-desc">Connect with MetaMask browser extension</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+    <div class="wallet-opt" onclick="connectWallet('coinbase')">
+      <div class="wallet-ico" style="background:rgba(0,82,255,.12)">🔵</div>
+      <div>
+        <div class="wallet-opt-name">Coinbase Wallet</div>
+        <div class="wallet-opt-desc">Connect with Coinbase Wallet</div>
+      </div>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2">
+        <polyline points="9 18 15 12 9 6"/>
+      </svg>
+    </div>
+    <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--muted)">
+      No wallet? <a href="https://metamask.io" target="_blank" style="color:var(--blue)">Get MetaMask</a> ·
+      <a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--blue)">Coinbase Wallet</a>
+    </p>
+  </div>
+</div>
+
+<!-- ═══════════ TEAM TAG MODAL ═══════════ -->
+<div class="overlay" id="tag-modal" onclick="if(event.target===this)closeModal('tag-modal')">
+  <div class="modal">
+    <div class="modal-title">Tag Your Team</div>
+    <div class="modal-sub">Select the team you're posting about</div>
+    <div class="team-grid" id="team-grid"></div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('tag-modal')">Cancel</button>
+      <button class="btn-primary" onclick="confirmTeamTag()">Tag Team</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ TIP MODAL ═══════════ -->
+<div class="overlay" id="tip-modal" onclick="if(event.target===this)closeModal('tip-modal')">
+  <div class="modal">
+    <div class="modal-title">Tip Creator ⬡</div>
+    <div class="tip-creator-card">
+      <div class="tip-cr-av" id="tip-av">⚽</div>
+      <div>
+        <div class="tip-cr-name" id="tip-name">Creator</div>
+        <div class="tip-cr-sub">Base Football Creator</div>
+      </div>
+    </div>
+    <div class="tip-section-lbl">Choose tip amount</div>
+    <div class="tip-grid">
+      <div class="tip-tile sel" onclick="selTip(this,'0.001')">
+        <div class="tip-tile-eth">0.001 ETH</div>
+        <div class="tip-tile-usd">≈ $2.50</div>
+      </div>
+      <div class="tip-tile" onclick="selTip(this,'0.005')">
+        <div class="tip-tile-eth">0.005 ETH</div>
+        <div class="tip-tile-usd">≈ $12.50</div>
+      </div>
+      <div class="tip-tile" onclick="selTip(this,'0.01')">
+        <div class="tip-tile-eth">0.01 ETH</div>
+        <div class="tip-tile-usd">≈ $25</div>
+      </div>
+      <div class="tip-tile" onclick="selTip(this,'0.05')">
+        <div class="tip-tile-eth">0.05 ETH</div>
+        <div class="tip-tile-usd">≈ $125</div>
+      </div>
+      <div class="tip-tile" onclick="selTip(this,'0.1')">
+        <div class="tip-tile-eth">0.10 ETH</div>
+        <div class="tip-tile-usd">≈ $250</div>
+      </div>
+      <div class="tip-tile" onclick="selTip(this,'custom')">
+        <div class="tip-tile-eth">Custom</div>
+        <div class="tip-tile-usd">Any amount</div>
+      </div>
+    </div>
+    <div id="custom-row" style="display:none">
+      <div class="tip-divider">Enter amount</div>
+      <div class="custom-wrap">
+        <input type="number" id="custom-amt" placeholder="0.000" step="0.001" min="0.001"/>
+        <span class="custom-unit">ETH</span>
+      </div>
+    </div>
+    <div class="gas-note">
+      ⛽ Tips sent <strong>on Base Mainnet</strong> via smart contract.
+      Gas ≈ $0.01. Platform fee: <strong>2.5%</strong>.
+    </div>
+    <div class="tx-box" id="tx-box">
+      <div id="tx-msg">Waiting…</div>
+      <div id="tx-hash-row" style="display:none;margin-top:6px">
+        <span style="color:var(--muted)">Tx: </span>
+        <span class="tx-link" id="tx-hash" onclick="openExplorer()"></span>
+      </div>
+    </div>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal('tip-modal')">Cancel</button>
+      <button class="btn-send" id="send-btn" onclick="confirmTip()">
+        <span id="send-text">Send Tip on Base</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════ LIGHTBOX ═══════════ -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <button class="lb-close" onclick="closeLightbox()">✕</button>
   <div id="lb-inner"></div>
 </div>
 
-<div id="wallet-modal-slot"></div>
-<div id="tip-modal-slot"></div>
-<div id="toast-slot"></div>
+<!-- ═══════════ TOAST ═══════════ -->
+<div class="toast" id="toast">
+  <span id="toast-ico">✅</span>
+  <span id="toast-msg"></span>
+</div>
 
-<script src="shared.js"></script>
 <script>
-// ── BUILD SHARED ELEMENTS ──
-document.getElementById('sidebar-nav').innerHTML = buildNav('index.html');
-document.getElementById('wallet-modal-slot').innerHTML = walletModalHTML();
-document.getElementById('tip-modal-slot').innerHTML   = tipModalHTML();
-document.getElementById('toast-slot').innerHTML       = toastHTML();
+// ═══════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════
+const API             = 'http://localhost:3001';
+const BASE_CHAIN_ID   = '0x2105';
+const BASE_EXPLORER   = 'https://basescan.org';
+const CONTRACT_ADDRESS= '0x1AAd46Ae1b0D0E888D591a8b328f58903785fC72';
+const CONTRACT_ABI    = [
+  "function tipCreator(address payable creatorWallet, string calldata postId) external payable",
+  "function registerCreator(string calldata username) external",
+  "function withdraw() external",
+  "function getBalance(address wallet) external view returns (uint256)",
+];
 
-// ── STATE ──
-let activeTab    = 'all';
-let activeLeague = 'all';
-let pendingMedia = [];
-let allPosts     = [];
+// ═══════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════
+let walletAddress   = null;
+let provider        = null;
+let signer          = null;
+let contract        = null;
+let selectedTip     = '0.001';
+let tipTargetWallet = null;
+let tipTargetName   = null;
+let currentTxHash   = null;
+let activeTab       = 'all';
+let activeLeague    = 'all';
+let selectedTeam    = null;
+let pendingMedia    = [];
+let allPosts        = [];
 
-function onLeagueFilter(league) { activeLeague = league; renderFeed(); }
+// ═══════════════════════════════════════════════════
+// TEAMS DATA
+// ═══════════════════════════════════════════════════
+const TEAMS = [
+  {name:'Arsenal',league:'Premier League'},{name:'Liverpool',league:'Premier League'},
+  {name:'Manchester City',league:'Premier League'},{name:'Manchester United',league:'Premier League'},
+  {name:'Chelsea',league:'Premier League'},{name:'Tottenham',league:'Premier League'},
+  {name:'Newcastle',league:'Premier League'},
+  {name:'Real Madrid',league:'La Liga'},{name:'Barcelona',league:'La Liga'},
+  {name:'Atletico Madrid',league:'La Liga'},
+  {name:'Bayern Munich',league:'Bundesliga'},{name:'Borussia Dortmund',league:'Bundesliga'},
+  {name:'Bayer Leverkusen',league:'Bundesliga'},
+  {name:'Inter Milan',league:'Serie A'},{name:'AC Milan',league:'Serie A'},
+  {name:'Juventus',league:'Serie A'},
+  {name:'PSG',league:'Ligue 1'},{name:'Monaco',league:'Ligue 1'},
+  {name:'Real Madrid',league:'Champions League'},{name:'Barcelona',league:'Champions League'},
+];
 
-// ── MEDIA UPLOAD ──
+// ═══════════════════════════════════════════════════
+// WALLET
+// ═══════════════════════════════════════════════════
+function openWalletModal() {
+  if (walletAddress) { showToast('Connected: ' + short(walletAddress)); return; }
+  openModal('wallet-modal');
+}
+
+async function connectWallet(type) {
+  closeModal('wallet-modal');
+  try {
+    let eth = window.ethereum;
+    if (!eth) {
+      showToast(type==='metamask'
+        ? '🦊 Install MetaMask from metamask.io'
+        : '🔵 Install Coinbase Wallet', true);
+      return;
+    }
+    if (window.ethereum?.providers) {
+      const found = window.ethereum.providers.find(p =>
+        type==='coinbase' ? p.isCoinbaseWallet : p.isMetaMask
+      );
+      if (found) eth = found;
+    }
+    showToast('Connecting…');
+    const accounts = await eth.request({ method:'eth_requestAccounts' });
+    walletAddress  = accounts[0];
+    await switchToBase(eth);
+    provider = new ethers.BrowserProvider(eth);
+    signer   = await provider.getSigner();
+    contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    updateWalletUI();
+    showToast('✅ Connected to Base Mainnet!');
+    eth.on('accountsChanged', a => { walletAddress=a[0]||null; updateWalletUI(); });
+    eth.on('chainChanged', () => location.reload());
+  } catch(e) {
+    if (e.code===4001) showToast('Cancelled', true);
+    else showToast('Failed: '+(e.message?.slice(0,60)||'Error'), true);
+  }
+}
+
+async function switchToBase(eth) {
+  try {
+    await eth.request({ method:'wallet_switchEthereumChain', params:[{chainId:BASE_CHAIN_ID}] });
+  } catch(e) {
+    if (e.code===4902) {
+      await eth.request({
+        method:'wallet_addEthereumChain',
+        params:[{
+          chainId:BASE_CHAIN_ID, chainName:'Base',
+          nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
+          rpcUrls:['https://mainnet.base.org'],
+          blockExplorerUrls:[BASE_EXPLORER],
+        }]
+      });
+    }
+  }
+}
+
+function updateWalletUI() {
+  const btn   = document.getElementById('wallet-btn');
+  const text  = document.getElementById('wallet-text');
+  const badge = document.getElementById('net-badge');
+  const av    = document.getElementById('my-av');
+  if (walletAddress) {
+    btn.classList.add('connected');
+    text.textContent = short(walletAddress);
+    badge.style.display = 'flex';
+    av.textContent = walletAddress.slice(2,4).toUpperCase();
+    av.style.background = 'linear-gradient(135deg,#0052ff,#00d4ff)';
+  } else {
+    btn.classList.remove('connected');
+    text.textContent = 'Connect Wallet';
+    badge.style.display = 'none';
+    av.textContent = '⚽';
+    av.style.background = '';
+  }
+}
+
+// ═══════════════════════════════════════════════════
+// MEDIA UPLOAD
+// ═══════════════════════════════════════════════════
 function onImagesSelected(e) {
   const files = Array.from(e.target.files);
   if (!files.length) return;
   const slots = 4 - pendingMedia.length;
-  if (slots <= 0) { showToast('Max 4 media items', true); return; }
+  if (slots <= 0) { showToast('Max 4 media items per post', true); return; }
   let done = 0;
-  files.slice(0, slots).forEach(f => {
+  const toAdd = files.slice(0, slots);
+  toAdd.forEach(f => {
     const r = new FileReader();
     r.onload = ev => {
-      pendingMedia.push({ type:'image', dataUrl: ev.target.result, name: f.name });
-      if (++done === Math.min(files.length, slots)) renderPreviews();
+      pendingMedia.push({ type:'image', dataUrl:ev.target.result, name:f.name });
+      if (++done === toAdd.length) renderPreviews();
     };
     r.readAsDataURL(f);
   });
@@ -257,7 +1136,10 @@ function onVideoSelected(e) {
   if (f.size > 150*1024*1024) { showToast('Video must be under 150MB', true); e.target.value=''; return; }
   if (pendingMedia.length >= 4) { showToast('Max 4 media items', true); e.target.value=''; return; }
   const r = new FileReader();
-  r.onload = ev => { pendingMedia.push({ type:'video', dataUrl: ev.target.result, name: f.name }); renderPreviews(); };
+  r.onload = ev => {
+    pendingMedia.push({ type:'video', dataUrl:ev.target.result, name:f.name });
+    renderPreviews();
+  };
   r.readAsDataURL(f);
   e.target.value = '';
 }
@@ -267,8 +1149,9 @@ function renderPreviews() {
   grid.innerHTML = pendingMedia.map((m,i) => `
     <div class="preview-thumb">
       ${m.type==='image'
-        ? `<img src="${m.dataUrl}" alt="${m.name}"/>`
-        : `<video src="${m.dataUrl}" muted playsinline></video><div class="vid-thumb-label">▶ Video</div>`}
+        ? `<img src="${m.dataUrl}" alt="preview"/>`
+        : `<video src="${m.dataUrl}" muted playsinline></video>
+           <div class="vid-thumb-label">▶ Video</div>`}
       <button class="preview-remove" onclick="removeMedia(${i})">✕</button>
     </div>`).join('');
   document.getElementById('photo-btn').classList.toggle('has-media', pendingMedia.some(m=>m.type==='image'));
@@ -284,33 +1167,81 @@ function onTextInput() {
   el.classList.toggle('warn', rem < 50);
 }
 
-// ── SUBMIT POST ──
-function submitPost() {
-  const txt = document.getElementById('post-text').value.trim();
-  if (!txt && !pendingMedia.length) { showToast('Write something or add media first ⚽', true); return; }
-  const hasImg = pendingMedia.some(m=>m.type==='image');
-  const hasVid = pendingMedia.some(m=>m.type==='video');
-  allPosts.unshift({
-    id: Date.now(),
-    author:   walletAddress ? short(walletAddress) : '0xYou.base',
-    initials: walletAddress ? walletAddress.slice(2,4).toUpperCase() : 'YO',
-    gradient: 'linear-gradient(135deg,#0052ff,#00d4ff)',
-    badge: 'Creator', team:'Base Football',
-    league: activeLeague==='all'?'All Leagues':activeLeague,
-    content: txt,
-    media: pendingMedia.map(m=>({type:m.type, url:m.dataUrl})),
-    likes:0, comments:0, time:'just now', wallet: walletAddress,
-    type: hasVid?'video':hasImg?'image':'text',
-  });
-  renderFeed();
-  document.getElementById('post-text').value='';
-  pendingMedia=[];
-  renderPreviews();
-  onTextInput();
-  showToast('Post published! 🔥');
+// ═══════════════════════════════════════════════════
+// TEAM TAG
+// ═══════════════════════════════════════════════════
+function openTeamTagModal() {
+  const grid = document.getElementById('team-grid');
+  grid.innerHTML = TEAMS.map(t => `
+    <div class="team-opt ${selectedTeam===t.name?'sel':''}"
+      onclick="selectTeam(this,'${t.name}')">
+      ${t.name}
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">${t.league}</div>
+    </div>`).join('');
+  openModal('tag-modal');
 }
 
-// ── RENDER FEED ──
+function selectTeam(el, name) {
+  document.querySelectorAll('.team-opt').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedTeam = name;
+}
+
+function confirmTeamTag() {
+  if (!selectedTeam) { showToast('Select a team first!', true); return; }
+  const btn = document.getElementById('tag-btn');
+  const lbl = document.getElementById('tag-btn-label');
+  btn.classList.add('has-media');
+  lbl.textContent = selectedTeam;
+  closeModal('tag-modal');
+  showToast(`Tagged: ${selectedTeam}`);
+}
+
+// ═══════════════════════════════════════════════════
+// SUBMIT POST
+// ═══════════════════════════════════════════════════
+function submitPost() {
+  const txt = document.getElementById('post-text').value.trim();
+  if (!txt && !pendingMedia.length) {
+    showToast('Write something or add a photo/video first ⚽', true);
+    return;
+  }
+  const hasImg = pendingMedia.some(m=>m.type==='image');
+  const hasVid = pendingMedia.some(m=>m.type==='video');
+  const post = {
+    id:       Date.now(),
+    author:   walletAddress ? short(walletAddress) : '0xYou.base',
+    initials: walletAddress ? walletAddress.slice(2,4).toUpperCase() : 'YO',
+    gradient: walletAddress
+      ? 'linear-gradient(135deg,#0052ff,#00d4ff)'
+      : 'linear-gradient(135deg,#6b7490,#3d4460)',
+    badge:    'Creator',
+    team:     selectedTeam || 'Base Football',
+    league:   activeLeague==='all' ? 'All Leagues' : activeLeague,
+    content:  txt,
+    media:    pendingMedia.map(m=>({type:m.type,url:m.dataUrl})),
+    likes:    0,
+    comments: 0,
+    time:     'just now',
+    wallet:   walletAddress,
+    type:     hasVid?'video':hasImg?'image':'text',
+  };
+  allPosts.unshift(post);
+  renderFeed();
+  // Reset
+  document.getElementById('post-text').value = '';
+  pendingMedia = [];
+  selectedTeam = null;
+  document.getElementById('tag-btn').classList.remove('has-media');
+  document.getElementById('tag-btn-label').textContent = 'Team Tag';
+  renderPreviews();
+  onTextInput();
+  showToast('Post published to Base Football! 🔥');
+}
+
+// ═══════════════════════════════════════════════════
+// RENDER FEED
+// ═══════════════════════════════════════════════════
 function renderFeed() {
   const el = document.getElementById('posts-feed');
   let posts = [...allPosts];
@@ -319,41 +1250,62 @@ function renderFeed() {
   if (activeTab==='text')   posts = posts.filter(p=>!p.media?.length||p.type==='text');
   if (activeLeague!=='all') posts = posts.filter(p=>p.league===activeLeague);
   if (!posts.length) {
-    el.innerHTML='<div class="empty"><div class="empty-ico">⚽</div><div class="empty-text">No posts yet — be the first to post!</div></div>';
+    el.innerHTML = `<div class="empty">
+      <div class="empty-ico">⚽</div>
+      <div class="empty-text">No posts yet — be the first to post!</div>
+    </div>`;
     return;
   }
-  el.innerHTML = posts.map((p,i)=>postHTML(p,i)).join('');
+  el.innerHTML = posts.map((p,i) => postHTML(p,i)).join('');
 }
 
 function postHTML(p,i) {
-  return `<div class="post-card" style="animation-delay:${i*.04}s">
+  const mediaHTML = buildMediaHTML(p.media||[]);
+  return `
+  <div class="post-card" style="animation-delay:${i*.04}s">
     <div class="post-inner">
       <div class="post-header">
         <div class="post-av" style="background:${p.gradient||'var(--blue)'}">${p.initials||'??'}</div>
         <div class="post-meta">
-          <div class="post-author-row">${escHtml(p.author)}<span class="badge badge-${(p.badge||'fan').toLowerCase().replace(' ','')}">${p.badge||'Fan'}</span></div>
-          <div class="post-sub">${p.team?`<span class="team-pill">${escHtml(p.team)}</span>`:''}<span class="league-lbl">${escHtml(p.league||'')}</span></div>
+          <div class="post-author-row">
+            ${esc(p.author)}
+            <span class="pbadge pbadge-${(p.badge||'fan').toLowerCase().replace(' ','')}">${p.badge||'Fan'}</span>
+          </div>
+          <div class="post-sub">
+            ${p.team ? `<span class="team-pill">${esc(p.team)}</span>` : ''}
+            <span class="league-lbl">${esc(p.league||'')}</span>
+          </div>
         </div>
         <span class="post-time">${p.time||timeAgo(p.created_at)}</span>
       </div>
-      ${p.content?`<div class="post-body">${escHtml(p.content)}</div>`:''}
-      ${buildMediaHTML(p.media||[])}
+      ${p.content ? `<div class="post-body">${esc(p.content)}</div>` : ''}
+      ${mediaHTML}
     </div>
     <div class="post-actions">
       <button class="act-btn" onclick="toggleLike(this,event)">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+        </svg>
         <span>${p.likes}</span>
       </button>
       <button class="act-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
         <span>${p.comments}</span>
       </button>
       <button class="act-btn">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+          <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+          <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+        </svg>
         Share
       </button>
-      <button class="tip-btn" onclick="openTipModal('${escHtml(p.author)}','${p.wallet||''}','${p.initials||'??'}','${p.gradient||''}',event)">
-        ⬡ Tip Creator <span class="tip-badge">on Base</span>
+      <button class="tip-btn"
+        onclick="openTipModal('${esc(p.author)}','${p.wallet||''}','${p.initials||'??'}','${p.gradient||''}',event)">
+        ⬡ Tip Creator
+        <span class="tip-badge">on Base</span>
       </button>
     </div>
   </div>`;
@@ -363,44 +1315,236 @@ function buildMediaHTML(media) {
   if (!media.length) return '';
   const n = media.length;
   const el = (m,cls='') => m.type==='video'
-    ? `<div class="vid-play ${cls}" onclick="openLightbox('${m.url}','video')"><video src="${m.url}" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video></div>`
-    : `<img src="${m.url}" class="${cls}" loading="lazy" onclick="openLightbox('${m.url}','image')" style="width:100%;height:100%;object-fit:cover;display:block"/>`;
+    ? `<div class="vid-play ${cls}" onclick="openLightbox('${m.url}','video')" style="cursor:pointer">
+        <video src="${m.url}" muted playsinline style="width:100%;height:100%;object-fit:cover;display:block"></video>
+       </div>`
+    : `<img src="${m.url}" class="${cls}" loading="lazy"
+        onclick="openLightbox('${m.url}','image')"
+        style="width:100%;height:100%;object-fit:cover;display:block"/>`;
   if (n===1) return `<div class="media-single">${el(media[0])}</div>`;
   if (n===2) return `<div class="media-grid-2">${el(media[0])}${el(media[1])}</div>`;
   const extra = n>3 ? `<div class="media-more-overlay">+${n-3}</div>` : '';
-  return `<div class="media-grid-3"><div class="media-main-cell">${el(media[0])}</div><div class="media-sub-cell">${el(media[1])}</div><div class="media-sub-cell media-more">${el(media[2])}${extra}</div></div>`;
+  return `<div class="media-grid-3">
+    <div class="media-main-cell">${el(media[0])}</div>
+    <div class="media-sub-cell">${el(media[1])}</div>
+    <div class="media-sub-cell media-more">${el(media[2])}${extra}</div>
+  </div>`;
 }
 
+// ═══════════════════════════════════════════════════
+// LIGHTBOX
+// ═══════════════════════════════════════════════════
 function openLightbox(url, type) {
   document.getElementById('lb-inner').innerHTML = type==='video'
     ? `<video src="${url}" controls autoplay style="max-width:90vw;max-height:90vh;border-radius:10px"></video>`
     : `<img src="${url}" style="max-width:90vw;max-height:90vh;border-radius:10px"/>`;
   document.getElementById('lightbox').classList.add('open');
 }
-function closeLightbox() { document.getElementById('lightbox').classList.remove('open'); document.getElementById('lb-inner').innerHTML=''; }
-
-function setTab(el, tab) {
-  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
-  el.classList.add('active'); activeTab=tab; renderFeed();
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('open');
+  document.getElementById('lb-inner').innerHTML = '';
 }
+
+// ═══════════════════════════════════════════════════
+// TIPPING
+// ═══════════════════════════════════════════════════
+function openTipModal(name, wallet, initials, gradient, event) {
+  if (event) event.stopPropagation();
+  if (!walletAddress) {
+    showToast('Connect your wallet first to tip on Base!', true);
+    setTimeout(openWalletModal, 700);
+    return;
+  }
+  tipTargetName   = name;
+  tipTargetWallet = wallet || null;
+  const av = document.getElementById('tip-av');
+  av.textContent = initials||name.slice(0,2).toUpperCase();
+  if (gradient) av.style.background = gradient;
+  document.getElementById('tip-name').textContent = name;
+  // Reset
+  selectedTip = '0.001';
+  document.querySelectorAll('.tip-tile').forEach(t=>t.classList.remove('sel'));
+  document.querySelectorAll('.tip-tile')[0].classList.add('sel');
+  document.getElementById('custom-row').style.display = 'none';
+  document.getElementById('custom-amt').value = '';
+  document.getElementById('tx-box').classList.remove('show');
+  document.getElementById('tx-hash-row').style.display = 'none';
+  document.getElementById('send-text').textContent = 'Send Tip on Base';
+  document.getElementById('send-btn').disabled = false;
+  currentTxHash = null;
+  openModal('tip-modal');
+}
+
+function selTip(el, val) {
+  document.querySelectorAll('.tip-tile').forEach(t=>t.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedTip = val;
+  document.getElementById('custom-row').style.display = val==='custom'?'block':'none';
+  if (val!=='custom') document.getElementById('custom-amt').value = '';
+}
+
+async function confirmTip() {
+  if (!walletAddress||!signer) { showToast('Connect wallet first!', true); return; }
+  let amount = selectedTip;
+  if (selectedTip==='custom') {
+    amount = document.getElementById('custom-amt').value.trim();
+    if (!amount||isNaN(parseFloat(amount))||parseFloat(amount)<=0) {
+      showToast('Enter a valid ETH amount', true); return;
+    }
+  }
+  const sendBtn  = document.getElementById('send-btn');
+  const sendText = document.getElementById('send-text');
+  const txBox    = document.getElementById('tx-box');
+  const txMsg    = document.getElementById('tx-msg');
+  sendBtn.disabled = true;
+  sendText.innerHTML = '<span class="spin"></span> Confirm in wallet…';
+  txBox.classList.add('show');
+  txMsg.textContent = '⏳ Waiting for wallet confirmation…';
+  try {
+    const amountWei = ethers.parseEther(amount);
+    if (contract && tipTargetWallet && tipTargetWallet.length===42) {
+      const tx = await contract.tipCreator(tipTargetWallet, `tip_${Date.now()}`, { value:amountWei });
+      currentTxHash = tx.hash;
+      txMsg.textContent = '⏳ Transaction sent! Confirming on Base…';
+      document.getElementById('tx-hash-row').style.display = 'block';
+      document.getElementById('tx-hash').textContent = short(tx.hash);
+      const receipt = await tx.wait();
+      txMsg.textContent = `✅ Confirmed in block #${receipt.blockNumber}`;
+      sendText.textContent = '✅ Tip Sent!';
+      showToast(`✅ ${amount} ETH tipped to ${tipTargetName} on Base!`);
+      setTimeout(()=>closeModal('tip-modal'), 2500);
+    } else {
+      txMsg.textContent = '⚠️ Creator wallet address needed for on-chain tip.';
+      sendText.textContent = 'No wallet address';
+      showToast('This creator has not linked a wallet yet', true);
+    }
+  } catch(e) {
+    txBox.classList.remove('show');
+    if (e.code===4001||e.code==='ACTION_REJECTED') showToast('Transaction cancelled', true);
+    else showToast('Tip failed: '+(e.message?.slice(0,80)||'Error'), true);
+    sendText.textContent = 'Send Tip on Base';
+    sendBtn.disabled = false;
+  }
+}
+
+function openExplorer() {
+  if (currentTxHash) window.open(`${BASE_EXPLORER}/tx/${currentTxHash}`, '_blank');
+}
+
+// ═══════════════════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════════════════
 function toggleLike(btn, e) {
   e.stopPropagation();
   const liked = btn.classList.toggle('liked');
   const s = btn.querySelector('span');
-  s.textContent = liked ? parseInt(s.textContent)+1 : Math.max(0,parseInt(s.textContent)-1);
+  s.textContent = liked
+    ? parseInt(s.textContent)+1
+    : Math.max(0, parseInt(s.textContent)-1);
 }
 
-// ── SAMPLE POSTS ──
-const SAMPLE = [
-  { id:1, author:'0xVictor_J.base', initials:'VJ', gradient:'linear-gradient(135deg,#fbbf24,#f97316)', badge:'Creator', team:'Real Madrid', league:'La Liga', content:'Vinicius in the 2nd half tonight was something else entirely 🔥 That nutmeg followed by the finish — genuinely one of the top 5 UCL moments this campaign.', media:[], likes:412, comments:54, time:'8m ago', type:'text', wallet:'0xabc001' },
-  { id:2, author:'0xKlopp_era.base', initials:'KE', gradient:'linear-gradient(135deg,#ef4444,#dc2626)', badge:'Top Fan', team:'Liverpool', league:'Premier League', content:"Darwin Nunez getting slated again but 2 goals and an assist. People want perfection but forget he's still only 24. Anfield knows what it has 🔴", media:[], likes:891, comments:143, time:'22m ago', type:'text', wallet:'0xabc002' },
-  { id:3, author:'0xBarcaVision.base', initials:'BV', gradient:'linear-gradient(135deg,#3b82f6,#1d4ed8)', badge:'Verified', team:'Barcelona', league:'La Liga', content:"Lamine Yamal at 17 doing things that took Messi until 22 to figure out. Just appreciate what we're witnessing 🔵🔴", media:[], likes:1200, comments:207, time:'1h ago', type:'text', wallet:'0xabc003' },
-  { id:4, author:'0xManUtd_DNA.base', initials:'MU', gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', badge:'Creator', team:'Man United', league:'Premier League', content:'3 academy graduates starting together was proper United. The identity is being rebuilt from the ground up 🧵', media:[], likes:674, comments:98, time:'2h ago', type:'text', wallet:'0xabc004' },
+function setTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activeTab = tab;
+  renderFeed();
+}
+
+function filterLeague(el, league) {
+  document.querySelectorAll('.league-item').forEach(i=>i.classList.remove('active'));
+  el.classList.add('active');
+  activeLeague = league;
+  renderFeed();
+  showToast(league==='all'?'Showing all leagues':'Filtering: '+league);
+}
+
+// ═══════════════════════════════════════════════════
+// MODAL HELPERS
+// ═══════════════════════════════════════════════════
+function openModal(id)  { document.getElementById(id)?.classList.add('open'); }
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+
+// ═══════════════════════════════════════════════════
+// TOAST
+// ═══════════════════════════════════════════════════
+let _tt;
+function showToast(msg, isErr=false) {
+  clearTimeout(_tt);
+  const el = document.getElementById('toast');
+  document.getElementById('toast-ico').textContent = isErr ? '❌' : '✅';
+  document.getElementById('toast-msg').textContent = msg;
+  el.classList.toggle('err', isErr);
+  el.classList.add('show');
+  _tt = setTimeout(()=>el.classList.remove('show'), 4500);
+}
+
+// ═══════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════
+function short(a) { return a ? `${a.slice(0,6)}…${a.slice(-4)}` : ''; }
+function esc(s)   {
+  return String(s||'')
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;')
+    .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function timeAgo(d) {
+  if (!d) return '';
+  const s = Math.floor((Date.now()-new Date(d))/1000);
+  if (s<60) return `${s}s ago`;
+  if (s<3600) return `${Math.floor(s/60)}m ago`;
+  if (s<86400) return `${Math.floor(s/3600)}h ago`;
+  return `${Math.floor(s/86400)}d ago`;
+}
+
+// ═══════════════════════════════════════════════════
+// SAMPLE POSTS — loads on startup
+// ═══════════════════════════════════════════════════
+const SAMPLE_POSTS = [
+  {
+    id:1, author:'0xVictor_J.base', initials:'VJ',
+    gradient:'linear-gradient(135deg,#fbbf24,#f97316)',
+    badge:'Creator', team:'Real Madrid', league:'La Liga',
+    content:'Vinicius in the 2nd half tonight was something else entirely 🔥 That nutmeg followed by the finish — genuinely one of the top 5 UCL moments this campaign. The man is on another level.',
+    media:[], likes:412, comments:54, time:'8m ago', type:'text', wallet:'0xabc001'
+  },
+  {
+    id:2, author:'0xKlopp_era.base', initials:'KE',
+    gradient:'linear-gradient(135deg,#ef4444,#dc2626)',
+    badge:'Top Fan', team:'Liverpool', league:'Premier League',
+    content:"Darwin Nunez getting slated again but 2 goals and an assist. People want perfection but forget he's still only 24. Anfield knows what it has 🔴",
+    media:[], likes:891, comments:143, time:'22m ago', type:'text', wallet:'0xabc002'
+  },
+  {
+    id:3, author:'0xBarcaVision.base', initials:'BV',
+    gradient:'linear-gradient(135deg,#3b82f6,#1d4ed8)',
+    badge:'Verified', team:'Barcelona', league:'La Liga',
+    content:"Lamine Yamal at 17 doing things that took Messi until 22 to figure out. Just appreciate what we're witnessing in real time 🔵🔴",
+    media:[], likes:1200, comments:207, time:'1h ago', type:'text', wallet:'0xabc003'
+  },
+  {
+    id:4, author:'0xManUtd_DNA.base', initials:'MU',
+    gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)',
+    badge:'Creator', team:'Man United', league:'Premier League',
+    content:'3 academy graduates starting together was proper United. The identity is being rebuilt from the ground up 🧵',
+    media:[], likes:674, comments:98, time:'2h ago', type:'text', wallet:'0xabc004'
+  },
+  {
+    id:5, author:'0xDerby_Mode.base', initials:'DM',
+    gradient:'linear-gradient(135deg,#0ea5e9,#0284c7)',
+    badge:'Creator', team:'Dortmund', league:'Bundesliga',
+    content:'Dortmund at home in the UCL is an experience like no other. Signal Iduna Park was absolutely rocking last night. The Yellow Wall is something special 💛🖤',
+    media:[], likes:523, comments:67, time:'3h ago', type:'text', wallet:'0xabc005'
+  },
 ];
 
+// ═══════════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════════
 window.addEventListener('load', () => {
-  allPosts = [...SAMPLE];
+  allPosts = [...SAMPLE_POSTS];
   renderFeed();
+
+  // Animate fan counter
   let fans = 24800;
   setInterval(() => {
     fans += Math.floor(Math.random()*3);
