@@ -1,0 +1,1001 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Base Football — Earnings</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;600&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+/* ═══════════════════════════════════════════════
+   BASE FOOTBALL — SHARED STYLES (shared.css)
+   ═══════════════════════════════════════════════ */
+:root {
+  --bg:#050608;--surface:#0d0f14;--card:#111318;--border:#1e2130;--border2:#252a3a;
+  --blue:#0052ff;--blue-glow:#0052ff55;--blue-dim:#0039c0;
+  --accent:#00d4ff;--green:#00e676;--gold:#ffd166;--red:#ef4444;
+  --text:#e8ecf4;--muted:#6b7490;--muted2:#3d4460;
+  --radius:12px;--radius-lg:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+html{scroll-behavior:smooth;}
+body{
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  color:var(--text);
+  min-height:100vh;
+  overflow-x:hidden;
+  position:relative;
+}
+body::before{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:
+    radial-gradient(ellipse at 20% 50%, rgba(0,82,255,0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.04) 0%, transparent 50%),
+    radial-gradient(ellipse at 60% 80%, rgba(0,230,118,0.03) 0%, transparent 50%);
+}
+body::after{
+  content:'';position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.4;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.05'/%3E%3C/svg%3E");
+}
+
+/* ── LAYOUT ── */
+.shell{display:grid;grid-template-columns:240px 1fr 300px;grid-template-rows:60px 1fr;min-height:100vh;position:relative;z-index:1;}
+.shell.no-right{grid-template-columns:240px 1fr;}
+
+/* ── TOPNAV ── */
+.topnav{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;background:rgba(5,6,8,.95);backdrop-filter:blur(24px);
+  border-bottom:1px solid var(--border);position:sticky;top:0;z-index:200;}
+.logo{display:flex;align-items:center;gap:10px;font-family:'Bebas Neue',sans-serif;
+  font-size:22px;letter-spacing:1px;cursor:pointer;text-decoration:none;color:var(--text);}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;
+  display:grid;place-items:center;font-size:16px;box-shadow:0 0 16px var(--blue-glow);}
+.logo span{color:var(--blue);}
+.nav-search{flex:1;max-width:360px;margin:0 32px;position:relative;}
+.nav-search input{width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:8px;padding:8px 14px 8px 36px;color:var(--text);
+  font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .2s;}
+.nav-search input:focus{border-color:var(--blue);}
+.nav-search input::placeholder{color:var(--muted);}
+.search-ico{position:absolute;left:11px;top:50%;transform:translateY(-50%);color:var(--muted);pointer-events:none;}
+.nav-right{display:flex;align-items:center;gap:10px;}
+.net-badge{font-family:'JetBrains Mono',monospace;font-size:10px;padding:4px 10px;
+  border-radius:99px;background:rgba(0,82,255,.12);color:var(--blue);
+  border:1px solid rgba(0,82,255,.3);display:none;align-items:center;gap:5px;}
+.net-dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite;}
+.btn-wallet{display:flex;align-items:center;gap:8px;background:var(--blue);color:#fff;
+  border:none;border-radius:8px;padding:9px 18px;font-family:'DM Sans',sans-serif;
+  font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;box-shadow:0 0 16px var(--blue-glow);}
+.btn-wallet:hover{background:var(--blue-dim);}
+.btn-wallet.connected{background:var(--surface);border:1px solid var(--green);color:var(--green);box-shadow:none;}
+
+/* ── LEFT SIDEBAR ── */
+.sidebar-l{padding:24px 16px;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;gap:4px;overflow-y:auto;
+  background:rgba(13,15,20,0.95);backdrop-filter:blur(10px);position:relative;z-index:1;}
+.s-label{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);
+  text-transform:uppercase;letter-spacing:1.5px;padding:12px 12px 6px;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;
+  border-radius:var(--radius);cursor:pointer;font-size:14px;color:var(--muted);
+  font-weight:500;transition:all .15s;position:relative;user-select:none;
+  text-decoration:none;}
+.nav-item:hover{background:var(--card);color:var(--text);}
+.nav-item.active{background:rgba(0,82,255,.12);color:var(--blue);}
+.nav-item.active::before{content:'';position:absolute;left:0;top:20%;bottom:20%;
+  width:3px;background:var(--blue);border-radius:0 3px 3px 0;}
+.league-item{display:flex;align-items:center;gap:10px;padding:9px 12px;
+  border-radius:var(--radius);cursor:pointer;font-size:13px;color:var(--muted);
+  transition:all .15s;user-select:none;}
+.league-item:hover,.league-item.active{background:var(--card);color:var(--text);}
+.l-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+
+/* ── PAGE CONTENT AREA ── */
+.page{padding:28px;overflow-y:auto;position:relative;z-index:1;}
+
+/* ── RIGHT SIDEBAR ── */
+.sidebar-r{padding:24px 16px;border-left:1px solid var(--border);
+  overflow-y:auto;display:flex;flex-direction:column;gap:20px;background:var(--surface);}
+.widget{background:rgba(17,19,24,0.92);border:1px solid var(--border);border-radius:var(--radius-lg);overflow:hidden;backdrop-filter:blur(8px);}
+.widget-head{display:flex;align-items:center;justify-content:space-between;
+  padding:14px 16px;border-bottom:1px solid var(--border);}
+.widget-title{font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1px;}
+.widget-link{font-size:11px;color:var(--blue);cursor:pointer;font-weight:500;}
+
+/* ── CARDS ── */
+.card{background:rgba(17,19,24,0.92);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:20px;transition:border-color .2s,transform .15s;backdrop-filter:blur(8px);}
+.card:hover{border-color:var(--border2);}
+
+/* ── PAGE HEADER ── */
+.page-header{margin-bottom:24px;}
+.page-title{font-family:'Bebas Neue',sans-serif;font-size:32px;letter-spacing:1.5px;color:var(--text);}
+.page-sub{font-size:13px;color:var(--muted);margin-top:4px;}
+
+/* ── STATS ROW ── */
+.stats-row{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:16px 20px;text-align:center;}
+.stat-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.5px;}
+
+/* ── TABS ── */
+.tabs{display:flex;border-bottom:1px solid var(--border);margin-bottom:20px;}
+.tab{padding:10px 20px;font-size:13px;font-weight:500;color:var(--muted);cursor:pointer;
+  border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .2s;user-select:none;}
+.tab:hover{color:var(--text);}
+.tab.active{color:var(--blue);border-bottom-color:var(--blue);}
+
+/* ── BADGES ── */
+.badge{font-family:'JetBrains Mono',monospace;font-size:9px;padding:2px 7px;
+  border-radius:99px;border:1px solid;display:inline-flex;align-items:center;}
+.badge-creator{border-color:var(--gold);color:var(--gold);}
+.badge-topfan{border-color:var(--accent);color:var(--accent);}
+.badge-verified{border-color:var(--green);color:var(--green);}
+.badge-fan{border-color:var(--muted);color:var(--muted);}
+.badge-live{border-color:var(--green);color:var(--green);background:rgba(0,230,118,.1);animation:pulse 2s infinite;}
+.badge-upcoming{border-color:var(--gold);color:var(--gold);background:rgba(255,209,102,.08);}
+.badge-completed{border-color:var(--muted);color:var(--muted);}
+
+/* ── BUTTONS ── */
+.btn-primary{background:var(--blue);color:#fff;border:none;border-radius:9px;
+  padding:10px 22px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;
+  cursor:pointer;transition:all .2s;box-shadow:0 0 12px var(--blue-glow);}
+.btn-primary:hover{background:var(--blue-dim);}
+.btn-outline{background:none;color:var(--muted);border:1px solid var(--border);border-radius:9px;
+  padding:10px 22px;font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-outline:hover{border-color:var(--border2);color:var(--text);}
+.btn-green{background:var(--green);color:#000;border:none;border-radius:9px;
+  padding:10px 22px;font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;
+  cursor:pointer;transition:opacity .2s;}
+.btn-green:hover{opacity:.88;}
+.btn-green:disabled{opacity:.5;cursor:not-allowed;}
+
+/* ── MODALS ── */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);
+  backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:var(--card);border:1px solid var(--border2);border-radius:20px;
+  padding:28px;width:100%;max-width:420px;animation:popIn .25s ease;max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:var(--muted);margin-bottom:22px;line-height:1.55;}
+.modal-btns{display:flex;gap:10px;margin-top:16px;}
+.gas-note{background:rgba(0,82,255,.07);border:1px solid rgba(0,82,255,.2);
+  border-radius:10px;padding:12px 14px;margin-bottom:16px;font-size:12px;
+  color:var(--muted);line-height:1.55;}
+.gas-note strong{color:var(--blue);}
+
+/* ── WALLET MODAL ── */
+.wallet-opt{display:flex;align-items:center;gap:14px;padding:15px;
+  border:1px solid var(--border);border-radius:13px;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.wallet-opt:hover{border-color:var(--blue);background:rgba(0,82,255,.05);}
+.wallet-ico{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;font-size:24px;flex-shrink:0;}
+.wallet-opt-name{font-size:14px;font-weight:600;color:var(--text);}
+.wallet-opt-desc{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── TIP MODAL ── */
+.tip-creator-card{background:var(--surface);border:1px solid var(--border);
+  border-radius:12px;padding:14px 16px;margin-bottom:20px;display:flex;align-items:center;gap:12px;}
+.tip-cr-av{width:44px;height:44px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:16px;color:#fff;flex-shrink:0;}
+.tip-cr-name{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text);}
+.tip-cr-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+.tip-section-label{font-size:11px;color:var(--muted);font-weight:600;
+  text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;}
+.tip-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:16px;}
+.tip-tile{padding:12px 8px;border:1px solid var(--border);border-radius:10px;
+  text-align:center;cursor:pointer;transition:all .15s;user-select:none;}
+.tip-tile:hover,.tip-tile.sel{border-color:var(--green);background:rgba(0,230,118,.07);}
+.tip-tile-eth{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:700;color:var(--text);}
+.tip-tile.sel .tip-tile-eth{color:var(--green);}
+.tip-tile-usd{font-size:10px;color:var(--muted);margin-top:2px;}
+.tip-divider{display:flex;align-items:center;gap:10px;margin-bottom:12px;font-size:11px;color:var(--muted);}
+.tip-divider::before,.tip-divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.custom-wrap{position:relative;margin-bottom:16px;}
+.custom-wrap input{width:100%;background:var(--surface);border:1px solid var(--border);
+  border-radius:10px;padding:11px 48px 11px 14px;color:var(--text);
+  font-family:'JetBrains Mono',monospace;font-size:13px;outline:none;transition:border-color .2s;}
+.custom-wrap input:focus{border-color:var(--green);}
+.custom-wrap input::placeholder{color:var(--muted2);}
+.custom-unit{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+  font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);}
+.tx-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:12px 14px;margin-bottom:14px;font-size:12px;color:var(--muted);text-align:center;display:none;}
+.tx-box.show{display:block;}
+.tx-link{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--blue);
+  cursor:pointer;text-decoration:underline;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:28px;right:28px;background:var(--card);border-radius:12px;
+  padding:14px 20px;font-size:13px;font-weight:500;display:flex;align-items:center;
+  gap:8px;z-index:3000;transform:translateY(80px);opacity:0;max-width:360px;
+  transition:all .35s cubic-bezier(.34,1.56,.64,1);
+  border:1px solid var(--green);color:var(--green);box-shadow:0 8px 32px rgba(0,230,118,.15);}
+.toast.err{border-color:var(--red);color:var(--red);box-shadow:0 8px 32px rgba(239,68,68,.15);}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ── SPINNER ── */
+.spin{width:18px;height:18px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:#fff;border-radius:50%;animation:rotate .7s linear infinite;display:inline-block;vertical-align:middle;}
+.spin.dark{border-color:rgba(0,0,0,.2);border-top-color:#000;}
+
+/* ── EMPTY STATE ── */
+.empty{text-align:center;padding:56px 20px;color:var(--muted);}
+.empty-ico{font-size:52px;margin-bottom:14px;}
+.empty-text{font-size:14px;line-height:1.6;}
+
+/* ── LOADING ── */
+.loading{display:flex;align-items:center;justify-content:center;gap:10px;
+  padding:40px;color:var(--muted);font-size:13px;}
+
+/* ── TRENDING WIDGET ── */
+.trend-item{padding:10px 16px;cursor:pointer;transition:background .15s;}
+.trend-item:hover{background:rgba(255,255,255,.02);}
+.trend-tag{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--blue);}
+.trend-count{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(14px);}to{opacity:1;transform:translateY(0);}}
+@keyframes popIn{from{transform:scale(.92);opacity:0;}to{transform:scale(1);opacity:1;}}
+@keyframes rotate{to{transform:rotate(360deg);}}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.4;}}
+@keyframes slideIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-track{background:transparent;}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .shell{grid-template-columns:220px 1fr!important;}
+  .sidebar-r{display:none;}
+}
+@media(max-width:720px){
+  .shell{grid-template-columns:1fr!important;}
+  .sidebar-l{display:none;}
+  .page{padding:16px;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ── MOBILE BOTTOM NAV ── */
+.mobile-nav{display:none;position:fixed;bottom:0;left:0;right:0;
+  background:rgba(5,6,8,.97);border-top:1px solid var(--border);
+  z-index:150;padding:8px 0 max(8px,env(safe-area-inset-bottom));
+  backdrop-filter:blur(20px);}
+.mobile-nav-inner{display:flex;justify-content:space-around;align-items:center;}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;
+  padding:6px 12px;cursor:pointer;color:var(--muted);text-decoration:none;
+  transition:color .2s;font-size:10px;}
+.mob-nav-item:hover,.mob-nav-item.active{color:var(--blue);}
+.mob-nav-item svg{width:20px;height:20px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .shell{grid-template-columns:220px 1fr!important;}
+  .sidebar-r{display:none!important;}
+}
+@media(max-width:768px){
+  .shell{grid-template-columns:1fr!important;}
+  .shell.no-right{grid-template-columns:1fr!important;}
+  .sidebar-l{display:none!important;}
+  .page{padding:16px;padding-bottom:80px;}
+  .topnav{padding:0 16px;}
+  .nav-search{display:none;}
+  .logo{font-size:18px;}
+  .logo-icon{width:28px;height:28px;font-size:14px;}
+  .btn-wallet{padding:7px 12px;font-size:12px;}
+  .stats-row{grid-template-columns:repeat(2,1fr);}
+  .mobile-nav{display:block;}
+}
+@media(max-width:400px){
+  .stats-row{grid-template-columns:1fr 1fr;}
+}
+
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
+<style>
+/* EARNINGS HERO */
+.earnings-hero{background:linear-gradient(135deg,rgba(0,82,255,.12),rgba(0,212,255,.06));
+  border:1px solid rgba(0,82,255,.2);border-radius:var(--radius-lg);
+  padding:28px 32px;margin-bottom:24px;display:flex;align-items:center;gap:32px;}
+.eh-main{flex:1;}
+.eh-label{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:1px;margin-bottom:6px;}
+.eh-amount{font-family:'Bebas Neue',sans-serif;font-size:52px;letter-spacing:2px;color:var(--text);line-height:1;}
+.eh-usd{font-size:14px;color:var(--muted);margin-top:6px;}
+.eh-actions{display:flex;flex-direction:column;gap:10px;flex-shrink:0;}
+.btn-withdraw{display:flex;align-items:center;gap:8px;padding:12px 24px;
+  border-radius:10px;background:var(--green);color:#000;border:none;
+  font-family:'DM Sans',sans-serif;font-size:14px;font-weight:700;cursor:pointer;transition:opacity .2s;}
+.btn-withdraw:hover{opacity:.88;}
+.btn-share{display:flex;align-items:center;gap:8px;padding:12px 24px;
+  border-radius:10px;background:none;color:var(--blue);border:1px solid rgba(0,82,255,.3);
+  font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .2s;}
+.btn-share:hover{background:rgba(0,82,255,.06);}
+
+/* WALLET CONNECT PROMPT */
+.connect-prompt{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  padding:48px;text-align:center;margin-bottom:24px;}
+.cp-icon{font-size:52px;margin-bottom:16px;}
+.cp-title{font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:1px;margin-bottom:8px;}
+.cp-sub{font-size:13px;color:var(--muted);margin-bottom:20px;line-height:1.6;}
+
+/* STATS GRID */
+.earn-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:24px;}
+.earn-stat{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:18px 20px;}
+.es-val{font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:1px;margin-bottom:4px;}
+.es-lbl{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.es-change{font-size:11px;margin-top:4px;}
+.es-change.up{color:var(--green);}
+.es-change.down{color:var(--red);}
+
+/* TIP HISTORY */
+.section-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
+.section-title-sm{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:1px;color:var(--text);}
+.tip-history-item{display:flex;align-items:center;gap:14px;padding:14px 18px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  margin-bottom:10px;transition:border-color .2s;animation:fadeUp .35s ease both;}
+.tip-history-item:hover{border-color:var(--border2);}
+.tip-av{width:38px;height:38px;border-radius:50%;display:grid;place-items:center;
+  font-family:'Bebas Neue',sans-serif;font-size:13px;color:#fff;flex-shrink:0;}
+.tip-info{flex:1;}
+.tip-from{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--text);}
+.tip-post{font-size:11px;color:var(--muted);margin-top:2px;}
+.tip-amount-col{text-align:right;flex-shrink:0;}
+.tip-eth-val{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;color:var(--green);}
+.tip-time{font-size:10px;color:var(--muted);margin-top:2px;}
+.tip-tx{font-size:10px;color:var(--blue);cursor:pointer;text-decoration:underline;display:block;margin-top:2px;}
+
+/* PREDICTION HISTORY */
+.pred-history-item{display:flex;align-items:center;gap:12px;padding:14px 18px;
+  background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);
+  margin-bottom:10px;transition:border-color .2s;animation:fadeUp .35s ease both;}
+.pred-history-item:hover{border-color:var(--border2);}
+.pred-match-info{flex:1;}
+.pred-match-name{font-size:13px;font-weight:600;color:var(--text);}
+.pred-match-league{font-size:11px;color:var(--muted);margin-top:2px;}
+.pred-result-col{text-align:center;flex-shrink:0;min-width:80px;}
+.pred-pick{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;padding:3px 10px;border-radius:99px;}
+.pred-pick.correct{background:rgba(0,230,118,.12);color:var(--green);border:1px solid rgba(0,230,118,.3);}
+.pred-pick.wrong{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.3);}
+.pred-pick.pending{background:rgba(255,209,102,.1);color:var(--gold);border:1px solid rgba(255,209,102,.3);}
+.pred-pts-col{font-family:'Bebas Neue',sans-serif;font-size:20px;text-align:right;flex-shrink:0;min-width:60px;}
+.pred-pts-col.earned{color:var(--green);}
+.pred-pts-col.pending{color:var(--muted);}
+
+/* CHART BAR */
+.earnings-chart{background:var(--card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:24px;}
+.chart-bars{display:flex;align-items:flex-end;gap:6px;height:100px;margin-top:16px;}
+.chart-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px;}
+.chart-bar{width:100%;background:rgba(0,82,255,.2);border-radius:4px 4px 0 0;
+  border:1px solid rgba(0,82,255,.3);transition:background .2s;cursor:pointer;}
+.chart-bar:hover{background:var(--blue);}
+.chart-bar.today{background:var(--blue);}
+.chart-day{font-size:9px;color:var(--muted);font-family:'JetBrains Mono',monospace;}
+</style>
+</head>
+<body>
+<div class="shell no-right">
+
+<nav class="topnav">
+  <a class="logo" href="index.html"><div class="logo-icon">⚽</div>BASE <span>FOOTBALL</span></a>
+  <div class="nav-search">
+    <svg class="search-ico" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+    <input type="text" placeholder="Search transactions…"/>
+  </div>
+  <div class="nav-right">
+    <span class="net-badge" id="net-badge"><span class="net-dot"></span>Base Mainnet</span>
+    <button class="btn-wallet" id="wallet-btn" onclick="openWalletModal()">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <span id="wallet-text">Connect Wallet</span>
+    </button>
+  </div>
+</nav>
+
+<aside class="sidebar-l" id="sidebar-nav"></aside>
+
+<main class="page">
+  <div class="page-header">
+    <div class="page-title">Earnings</div>
+    <div class="page-sub">Your tips received and prediction points on Base Mainnet</div>
+  </div>
+
+  <!-- CONNECT PROMPT shown when no wallet -->
+  <div id="connect-prompt" class="connect-prompt">
+    <div class="cp-icon">💰</div>
+    <div class="cp-title">Connect Your Wallet</div>
+    <div class="cp-sub">Connect your wallet to see your earnings from tips and predictions on Base Mainnet. All transactions are fully on-chain.</div>
+    <button class="btn-primary" onclick="openWalletModal()">Connect Wallet to View Earnings</button>
+  </div>
+
+  <!-- EARNINGS CONTENT shown after wallet connects -->
+  <div id="earnings-content" style="display:none">
+
+    <!-- Hero -->
+    <div class="earnings-hero">
+      <div class="eh-main">
+        <div class="eh-label">Total Earned on Base</div>
+        <div class="eh-amount" id="total-eth">0.000 ETH</div>
+        <div class="eh-usd" id="total-usd">≈ $0.00 USD</div>
+      </div>
+      <div class="eh-actions">
+        <button class="btn-withdraw" onclick="withdrawEarnings()">
+          ⬡ Withdraw to Wallet
+        </button>
+        <button class="btn-share" onclick="showToast('Share your earnings!')">
+          📊 Share Stats
+        </button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="earn-stats">
+      <div class="earn-stat">
+        <div class="es-val" style="color:var(--green)" id="tips-received">0</div>
+        <div class="es-lbl">Tips Received</div>
+        <div class="es-change up" id="tips-change">+0 this week</div>
+      </div>
+      <div class="earn-stat">
+        <div class="es-val" style="color:var(--blue)" id="pred-points">0</div>
+        <div class="es-lbl">Prediction Points</div>
+        <div class="es-change up" id="pred-change">+0 this week</div>
+      </div>
+      <div class="earn-stat">
+        <div class="es-val" style="color:var(--gold)" id="pred-accuracy">0%</div>
+        <div class="es-lbl">Prediction Accuracy</div>
+        <div class="es-change" id="accuracy-change">of all predictions</div>
+      </div>
+    </div>
+
+    <!-- Weekly earnings chart -->
+    <div class="earnings-chart">
+      <div class="section-head">
+        <div class="section-title-sm">Weekly Earnings</div>
+        <span style="font-size:11px;color:var(--muted)">Last 7 days · ETH</span>
+      </div>
+      <div class="chart-bars" id="chart-bars"></div>
+    </div>
+
+    <!-- Tabs -->
+    <div class="tabs">
+      <div class="tab active" onclick="setTab(this,'tips')">Tips Received</div>
+      <div class="tab" onclick="setTab(this,'predictions')">Predictions</div>
+    </div>
+
+    <div id="tips-section">
+      <div id="tips-list"></div>
+    </div>
+
+    <div id="predictions-section" style="display:none">
+      <div id="predictions-list"></div>
+    </div>
+
+  </div>
+</main>
+
+</div>
+
+<!-- WITHDRAW MODAL -->
+<div class="overlay" id="withdraw-modal" onclick="overlayClose(event,'withdraw-modal')">
+  <div class="modal">
+    <div class="modal-title">Withdraw Earnings ⬡</div>
+    <div class="modal-sub">Withdraw your accumulated tips from the BaseFootball smart contract directly to your wallet.</div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px 18px;margin-bottom:18px;">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:4px">Available to withdraw</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:var(--green)" id="withdraw-amount">0.000 ETH</div>
+    </div>
+    <div class="gas-note">⛽ Withdrawal is an <strong>on-chain Base transaction</strong>. Gas fee ≈ $0.01.</div>
+    <div class="modal-btns">
+      <button class="btn-outline" onclick="closeModal('withdraw-modal')">Cancel</button>
+      <button class="btn-green" onclick="confirmWithdraw()">Withdraw on Base</button>
+    </div>
+  </div>
+</div>
+
+<div id="wallet-modal-slot"></div>
+<div id="tip-modal-slot"></div>
+<div id="toast-slot"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+// BASE FOOTBALL — SHARED JS (shared.js)
+// All pages include this file for wallet + tipping + nav
+// ═══════════════════════════════════════════════════════
+
+const API           = 'http://localhost:3001';
+const BASE_CHAIN_ID = '0x2105'; // Base Mainnet 8453
+const BASE_EXPLORER = 'https://basescan.org';
+const CONTRACT_ADDRESS = '0x0000000000000000000000000000000000000000'; // replace after deploying
+const CONTRACT_ABI = [
+  "function tipCreator(address payable creatorWallet, string calldata postId) external payable",
+  "function registerCreator(string calldata username) external",
+  "function withdraw() external",
+  "function getBalance(address wallet) external view returns (uint256)",
+  "event TipSent(address indexed from, address indexed to, uint256 amount, uint256 creatorAmount, uint256 platformFee, string postId)"
+];
+
+// ── STATE ──────────────────────────────────────────────
+let walletAddress   = null;
+let provider        = null;
+let signer          = null;
+let contract        = null;
+let selectedTip     = '0.001';
+let tipTargetWallet = null;
+let tipTargetName   = null;
+let currentTxHash   = null;
+
+// ── WALLET ─────────────────────────────────────────────
+function openWalletModal() {
+  if (walletAddress) { showToast('Connected: ' + short(walletAddress)); return; }
+  openModal('wallet-modal');
+}
+
+async function connectWallet(type) {
+  closeModal('wallet-modal');
+  try {
+    let eth = window.ethereum;
+    if (!eth) {
+      showToast(type === 'metamask' ? '🦊 Install MetaMask from metamask.io' : '🔵 Install Coinbase Wallet', true);
+      return;
+    }
+    if (window.ethereum?.providers) {
+      const found = window.ethereum.providers.find(p => type === 'coinbase' ? p.isCoinbaseWallet : p.isMetaMask);
+      if (found) eth = found;
+    }
+    showToast('Connecting…');
+    const accounts = await eth.request({ method: 'eth_requestAccounts' });
+    walletAddress  = accounts[0];
+    await switchToBase(eth);
+    provider = new ethers.BrowserProvider(eth);
+    signer   = await provider.getSigner();
+    if (CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000') {
+      contract = new ethers.Contract(CONTRACT_ADDRESS, CONTRACT_ABI, signer);
+    }
+    updateWalletUI();
+    showToast('✅ Connected to Base Mainnet!');
+    eth.on('accountsChanged', a => { walletAddress = a[0] || null; updateWalletUI(); });
+    eth.on('chainChanged', () => location.reload());
+  } catch (e) {
+    if (e.code === 4001) showToast('Cancelled', true);
+    else showToast('Failed: ' + (e.message?.slice(0, 60) || 'Error'), true);
+  }
+}
+
+async function switchToBase(eth) {
+  try {
+    await eth.request({ method: 'wallet_switchEthereumChain', params: [{ chainId: BASE_CHAIN_ID }] });
+  } catch (e) {
+    if (e.code === 4902) {
+      await eth.request({
+        method: 'wallet_addEthereumChain',
+        params: [{
+          chainId: BASE_CHAIN_ID, chainName: 'Base',
+          nativeCurrency: { name: 'ETH', symbol: 'ETH', decimals: 18 },
+          rpcUrls: ['https://mainnet.base.org'],
+          blockExplorerUrls: [BASE_EXPLORER],
+        }]
+      });
+    }
+  }
+}
+
+function updateWalletUI() {
+  const btn   = document.getElementById('wallet-btn');
+  const text  = document.getElementById('wallet-text');
+  const badge = document.getElementById('net-badge');
+  const av    = document.getElementById('my-av');
+  if (walletAddress) {
+    btn.classList.add('connected');
+    text.textContent = short(walletAddress);
+    if (badge) badge.style.display = 'flex';
+    if (av) { av.textContent = walletAddress.slice(2,4).toUpperCase(); av.style.background = 'linear-gradient(135deg,#0052ff,#00d4ff)'; }
+  } else {
+    btn.classList.remove('connected');
+    text.textContent = 'Connect Wallet';
+    if (badge) badge.style.display = 'none';
+    if (av) { av.textContent = '⚽'; av.style.background = ''; }
+  }
+}
+
+// ── TIPPING ────────────────────────────────────────────
+function openTipModal(name, wallet, initials, gradient, event) {
+  if (event) event.stopPropagation();
+  if (!walletAddress) {
+    showToast('Connect your wallet first!', true);
+    setTimeout(openWalletModal, 700);
+    return;
+  }
+  tipTargetName   = name;
+  tipTargetWallet = wallet || null;
+
+  const av = document.getElementById('tip-av');
+  if (av) { av.textContent = initials || name.slice(0,2).toUpperCase(); if (gradient) av.style.background = gradient; }
+  const tipName = document.getElementById('tip-name');
+  if (tipName) tipName.textContent = name;
+
+  selectedTip = '0.001';
+  document.querySelectorAll('.tip-tile').forEach(t => t.classList.remove('sel'));
+  const firstTile = document.querySelector('.tip-tile');
+  if (firstTile) firstTile.classList.add('sel');
+  const customRow = document.getElementById('custom-row');
+  if (customRow) customRow.style.display = 'none';
+  const customAmt = document.getElementById('custom-amt');
+  if (customAmt) customAmt.value = '';
+  const txBox = document.getElementById('tx-box');
+  if (txBox) txBox.classList.remove('show');
+  const sendText = document.getElementById('send-text');
+  if (sendText) sendText.textContent = 'Send Tip on Base';
+  const sendBtn = document.getElementById('send-btn');
+  if (sendBtn) sendBtn.disabled = false;
+  currentTxHash = null;
+
+  openModal('tip-modal');
+}
+
+function selTip(el, val) {
+  document.querySelectorAll('.tip-tile').forEach(t => t.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedTip = val;
+  const customRow = document.getElementById('custom-row');
+  if (customRow) customRow.style.display = val === 'custom' ? 'block' : 'none';
+  if (val !== 'custom') { const a = document.getElementById('custom-amt'); if (a) a.value = ''; }
+}
+
+async function confirmTip() {
+  if (!walletAddress || !signer) { showToast('Connect your wallet first!', true); return; }
+  let amount = selectedTip;
+  if (selectedTip === 'custom') {
+    amount = document.getElementById('custom-amt')?.value.trim();
+    if (!amount || isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+      showToast('Enter a valid ETH amount', true); return;
+    }
+  }
+  const sendBtn  = document.getElementById('send-btn');
+  const sendText = document.getElementById('send-text');
+  const txBox    = document.getElementById('tx-box');
+  const txMsg    = document.getElementById('tx-msg');
+  if (sendBtn)  sendBtn.disabled = true;
+  if (sendText) sendText.innerHTML = '<span class="spin dark"></span> Confirm in wallet…';
+  if (txBox)    txBox.classList.add('show');
+  if (txMsg)    txMsg.textContent = '⏳ Waiting for wallet confirmation…';
+  try {
+    const amountWei = ethers.parseEther(amount);
+    if (contract && CONTRACT_ADDRESS !== '0x0000000000000000000000000000000000000000' && tipTargetWallet) {
+      const tx = await contract.tipCreator(tipTargetWallet, `tip_${Date.now()}`, { value: amountWei });
+      currentTxHash = tx.hash;
+      if (txMsg) txMsg.textContent = '⏳ Transaction sent! Confirming on Base…';
+      const hashRow = document.getElementById('tx-hash-row');
+      const hashEl  = document.getElementById('tx-hash');
+      if (hashRow) hashRow.style.display = 'block';
+      if (hashEl)  hashEl.textContent = short(tx.hash);
+      const receipt = await tx.wait();
+      if (txMsg) txMsg.textContent = `✅ Confirmed in block #${receipt.blockNumber}`;
+      if (sendText) sendText.textContent = '✅ Tip Sent!';
+      showToast(`✅ ${amount} ETH tipped to ${tipTargetName} on Base!`);
+      setTimeout(() => closeModal('tip-modal'), 2500);
+    } else {
+      if (txMsg) txMsg.textContent = '⚠️ Deploy BaseFootball.sol on Base Mainnet first.';
+      if (sendText) sendText.textContent = 'Contract not deployed';
+      showToast('Deploy contract to enable live tips!', true);
+    }
+  } catch (e) {
+    if (txBox) txBox.classList.remove('show');
+    if (e.code === 4001 || e.code === 'ACTION_REJECTED') showToast('Transaction cancelled', true);
+    else showToast('Tip failed: ' + (e.message?.slice(0,80) || 'Error'), true);
+    if (sendText) sendText.textContent = 'Send Tip on Base';
+    if (sendBtn)  sendBtn.disabled = false;
+  }
+}
+
+function openExplorer() {
+  if (currentTxHash) window.open(`${BASE_EXPLORER}/tx/${currentTxHash}`, '_blank');
+}
+
+// ── MODAL HELPERS ──────────────────────────────────────
+function openModal(id)  { const el = document.getElementById(id); if (el) el.classList.add('open'); }
+function closeModal(id) { const el = document.getElementById(id); if (el) el.classList.remove('open'); }
+function overlayClose(e, id) { if (e.target === document.getElementById(id)) closeModal(id); }
+
+// ── TOAST ──────────────────────────────────────────────
+let _tt;
+function showToast(msg, isErr = false) {
+  clearTimeout(_tt);
+  const el = document.getElementById('toast');
+  if (!el) return;
+  document.getElementById('toast-ico').textContent = isErr ? '❌' : '✅';
+  document.getElementById('toast-msg').textContent = msg;
+  el.classList.toggle('err', isErr);
+  el.classList.add('show');
+  _tt = setTimeout(() => el.classList.remove('show'), 4500);
+}
+
+// ── UTILS ──────────────────────────────────────────────
+function short(addr) { return addr ? `${addr.slice(0,6)}…${addr.slice(-4)}` : ''; }
+function escHtml(s)  { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function timeAgo(d)  {
+  if (!d) return '';
+  const s = Math.floor((Date.now() - new Date(d)) / 1000);
+  if (s < 60) return `${s}s ago`; if (s < 3600) return `${Math.floor(s/60)}m ago`;
+  if (s < 86400) return `${Math.floor(s/3600)}h ago`; return `${Math.floor(s/86400)}d ago`;
+}
+function fmtDate(d) {
+  if (!d) return '';
+  return new Date(d).toLocaleDateString('en-GB', { day:'numeric', month:'short', hour:'2-digit', minute:'2-digit' });
+}
+function fmtKickoff(d) {
+  if (!d) return '';
+  const dt = new Date(d), now = new Date(), diff = dt - now;
+  if (diff < 0) return fmtDate(d);
+  if (diff < 3600000) return `In ${Math.floor(diff/60000)}m`;
+  if (diff < 86400000) return `Today ${dt.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'})}`;
+  return dt.toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'});
+}
+
+// ── SHARED NAV HTML ─────────────────────────────────────
+// Call this in each page's <aside class="sidebar-l"> to build the nav
+function buildNav(activePage) {
+  const pages = [
+    { href:'index.html',    icon:'home',    label:'Home Feed' },
+    { href:'creators.html', icon:'star',    label:'Top Creators' },
+    { href:'matches.html',  icon:'clock',   label:'Live Matches' },
+    { href:'earnings.html', icon:'dollar',  label:'Earnings' },
+  ];
+  const icons = {
+    home:   `<path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>`,
+    star:   `<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>`,
+    clock:  `<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>`,
+    dollar: `<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>`,
+  };
+  const leagues = [
+    { label:'All Leagues',      color:'#e8ecf4', val:'all' },
+    { label:'Champions League', color:'#3B82F6', val:'Champions League' },
+    { label:'Premier League',   color:'#7C3AED', val:'Premier League' },
+    { label:'La Liga',          color:'#EF4444', val:'La Liga' },
+    { label:'Serie A',          color:'#22C55E', val:'Serie A' },
+    { label:'Bundesliga',       color:'#F59E0B', val:'Bundesliga' },
+    { label:'Ligue 1',          color:'#0EA5E9', val:'Ligue 1' },
+  ];
+  return `
+    <div class="s-label">Navigation</div>
+    ${pages.map(p => `
+      <a href="${p.href}" class="nav-item ${activePage === p.href ? 'active' : ''}">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">${icons[p.icon]}</svg>
+        ${p.label}
+      </a>`).join('')}
+    <div class="s-label" style="margin-top:8px">Leagues</div>
+    ${leagues.map(l => `
+      <div class="league-item" onclick="leagueClick(this,'${l.val}')">
+        <div class="l-dot" style="background:${l.color}"></div>${l.label}
+      </div>`).join('')}`;
+}
+
+// ── SHARED MODALS HTML ──────────────────────────────────
+function walletModalHTML() {
+  return `
+  <div class="overlay" id="wallet-modal" onclick="overlayClose(event,'wallet-modal')">
+    <div class="modal">
+      <div class="modal-title">Connect Wallet</div>
+      <div class="modal-sub">Connect to post, tip creators and earn on <strong style="color:var(--blue)">Base Mainnet</strong>.</div>
+      <div class="wallet-opt" onclick="connectWallet('metamask')">
+        <div class="wallet-ico" style="background:rgba(246,133,27,.12)">🦊</div>
+        <div><div class="wallet-opt-name">MetaMask</div><div class="wallet-opt-desc">Connect with MetaMask</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div class="wallet-opt" onclick="connectWallet('coinbase')">
+        <div class="wallet-ico" style="background:rgba(0,82,255,.12)">🔵</div>
+        <div><div class="wallet-opt-name">Coinbase Wallet</div><div class="wallet-opt-desc">Connect with Coinbase Wallet</div></div>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--muted)" stroke-width="2"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <p style="text-align:center;margin-top:16px;font-size:11px;color:var(--muted)">
+        No wallet? <a href="https://metamask.io" target="_blank" style="color:var(--blue)">Get MetaMask</a> · <a href="https://www.coinbase.com/wallet" target="_blank" style="color:var(--blue)">Coinbase Wallet</a>
+      </p>
+    </div>
+  </div>`;
+}
+
+function tipModalHTML() {
+  return `
+  <div class="overlay" id="tip-modal" onclick="overlayClose(event,'tip-modal')">
+    <div class="modal">
+      <div class="modal-title">Tip Creator ⬡</div>
+      <div class="tip-creator-card">
+        <div class="tip-cr-av" id="tip-av">⚽</div>
+        <div><div class="tip-cr-name" id="tip-name">Creator</div><div class="tip-cr-sub">Base Football Creator</div></div>
+      </div>
+      <div class="tip-section-label">Choose tip amount</div>
+      <div class="tip-grid">
+        <div class="tip-tile sel" onclick="selTip(this,'0.001')"><div class="tip-tile-eth">0.001 ETH</div><div class="tip-tile-usd">≈ $2.50</div></div>
+        <div class="tip-tile" onclick="selTip(this,'0.005')"><div class="tip-tile-eth">0.005 ETH</div><div class="tip-tile-usd">≈ $12.50</div></div>
+        <div class="tip-tile" onclick="selTip(this,'0.01')"><div class="tip-tile-eth">0.01 ETH</div><div class="tip-tile-usd">≈ $25</div></div>
+        <div class="tip-tile" onclick="selTip(this,'0.05')"><div class="tip-tile-eth">0.05 ETH</div><div class="tip-tile-usd">≈ $125</div></div>
+        <div class="tip-tile" onclick="selTip(this,'0.1')"><div class="tip-tile-eth">0.10 ETH</div><div class="tip-tile-usd">≈ $250</div></div>
+        <div class="tip-tile" onclick="selTip(this,'custom')"><div class="tip-tile-eth">Custom</div><div class="tip-tile-usd">Any amount</div></div>
+      </div>
+      <div id="custom-row" style="display:none">
+        <div class="tip-divider">Enter amount</div>
+        <div class="custom-wrap">
+          <input type="number" id="custom-amt" placeholder="0.000" step="0.001" min="0.001"/>
+          <span class="custom-unit">ETH</span>
+        </div>
+      </div>
+      <div class="gas-note">⛽ Tips sent <strong>on Base Mainnet</strong> via smart contract. Gas ≈ $0.01–$0.05. Platform fee: <strong>2.5%</strong>.</div>
+      <div class="tx-box" id="tx-box">
+        <div id="tx-msg">Waiting…</div>
+        <div id="tx-hash-row" style="display:none;margin-top:6px">
+          <span style="color:var(--muted)">Tx: </span>
+          <span class="tx-link" id="tx-hash" onclick="openExplorer()"></span>
+        </div>
+      </div>
+      <div class="modal-btns">
+        <button class="btn-outline" onclick="closeModal('tip-modal')">Cancel</button>
+        <button class="btn-green" id="send-btn" onclick="confirmTip()">
+          <span id="send-text">Send Tip on Base</span>
+        </button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function toastHTML() {
+  return `<div class="toast" id="toast"><span id="toast-ico">✅</span><span id="toast-msg"></span></div>`;
+}
+
+function leagueClick(el, league) {
+  document.querySelectorAll('.league-item').forEach(i => i.classList.remove('active'));
+  el.classList.add('active');
+  if (typeof onLeagueFilter === 'function') onLeagueFilter(league);
+  else showToast(league === 'all' ? 'Showing all leagues' : `Filtering: ${league}`);
+}
+
+</script>
+<script>
+document.getElementById('sidebar-nav').innerHTML = buildNav('earnings.html');
+document.getElementById('wallet-modal-slot').innerHTML = walletModalHTML();
+document.getElementById('tip-modal-slot').innerHTML   = tipModalHTML();
+document.getElementById('toast-slot').innerHTML       = toastHTML();
+
+const SAMPLE_TIPS = [
+  { from:'0xVictor_J.base',    gradient:'linear-gradient(135deg,#fbbf24,#f97316)', initials:'VJ', post:'Your post about UCL goals 🔥',    amount:'0.05',  time:'2h ago',   tx:'0xabc123' },
+  { from:'0xKlopp_era.base',   gradient:'linear-gradient(135deg,#ef4444,#dc2626)', initials:'KE', post:'Premier League analysis thread', amount:'0.01',  time:'5h ago',   tx:'0xdef456' },
+  { from:'0xBarcaVision.base', gradient:'linear-gradient(135deg,#3b82f6,#1d4ed8)', initials:'BV', post:'La Liga breakdown',              amount:'0.005', time:'1d ago',   tx:'0xghi789' },
+  { from:'0xManUtd_DNA.base',  gradient:'linear-gradient(135deg,#8b5cf6,#6d28d9)', initials:'MU', post:'Match day post',                 amount:'0.1',   time:'2d ago',   tx:'0xjkl012' },
+  { from:'0xDerby_Mode.base',  gradient:'linear-gradient(135deg,#0ea5e9,#0284c7)', initials:'DM', post:'Champions League predictions',   amount:'0.05',  time:'3d ago',   tx:'0xmno345' },
+];
+
+const SAMPLE_PREDS = [
+  { match:'Liverpool vs Man United',   league:'Premier League',   pick:'home', result:'correct', score:'2-1', points:3,  time:'Today' },
+  { match:'Barcelona vs Real Madrid',  league:'La Liga',           pick:'away', result:'correct', score:'1-3', points:3,  time:'2 days ago' },
+  { match:'Bayern vs Bayer Leverkusen',league:'Bundesliga',        pick:'home', result:'wrong',   score:'2-2', points:0,  time:'3 days ago' },
+  { match:'Arsenal vs Tottenham',      league:'Premier League',   pick:'home', result:'correct', score:'2-0', points:3,  time:'5 days ago' },
+  { match:'Inter vs Juventus',         league:'Serie A',           pick:'draw', result:'pending', score:'—',   points:0,  time:'Tomorrow' },
+];
+
+const WEEKLY_DATA = [0.005, 0.01, 0.05, 0.1, 0.025, 0.005, 0.215];
+const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+let activeTab = 'tips';
+
+function setTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  el.classList.add('active');
+  activeTab = tab;
+  document.getElementById('tips-section').style.display        = tab==='tips'?'block':'none';
+  document.getElementById('predictions-section').style.display = tab==='predictions'?'block':'none';
+}
+
+function renderEarnings() {
+  const totalEth = SAMPLE_TIPS.reduce((a,t)=>a+parseFloat(t.amount),0).toFixed(3);
+  document.getElementById('total-eth').textContent = `${totalEth} ETH`;
+  document.getElementById('total-usd').textContent = `≈ $${(parseFloat(totalEth)*2500).toFixed(2)} USD`;
+  document.getElementById('tips-received').textContent = SAMPLE_TIPS.length;
+  document.getElementById('pred-points').textContent = SAMPLE_PREDS.reduce((a,p)=>a+p.points,0);
+  const correct = SAMPLE_PREDS.filter(p=>p.result==='correct').length;
+  const total   = SAMPLE_PREDS.filter(p=>p.result!=='pending').length;
+  document.getElementById('pred-accuracy').textContent = total>0?`${Math.round(correct/total*100)}%`:'—';
+  document.getElementById('tips-change').textContent   = `+${SAMPLE_TIPS.filter(t=>t.time.includes('h')).length} this week`;
+  document.getElementById('pred-change').textContent   = `+${SAMPLE_PREDS.filter(p=>p.points>0).length*3} this week`;
+  document.getElementById('withdraw-amount').textContent = `${totalEth} ETH`;
+  renderChart();
+  renderTips();
+  renderPredictions();
+}
+
+function renderChart() {
+  const maxVal = Math.max(...WEEKLY_DATA);
+  document.getElementById('chart-bars').innerHTML = WEEKLY_DATA.map((v,i) => `
+    <div class="chart-bar-wrap">
+      <div class="chart-bar ${i===6?'today':''}" style="height:${Math.max(6,Math.round(v/maxVal*90))}px" title="${v} ETH"></div>
+      <div class="chart-day">${DAYS[i]}</div>
+    </div>`).join('');
+}
+
+function renderTips() {
+  document.getElementById('tips-list').innerHTML = SAMPLE_TIPS.map((t,i) => `
+    <div class="tip-history-item" style="animation-delay:${i*.04}s">
+      <div class="tip-av" style="background:${t.gradient}">${t.initials}</div>
+      <div class="tip-info">
+        <div class="tip-from">${escHtml(t.from)}</div>
+        <div class="tip-post">Tipped on: "${escHtml(t.post)}"</div>
+      </div>
+      <div class="tip-amount-col">
+        <div class="tip-eth-val">+${t.amount} ETH</div>
+        <div class="tip-time">${t.time}</div>
+        <span class="tip-tx" onclick="window.open('https://basescan.org/tx/${t.tx}','_blank')">View on Basescan ↗</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderPredictions() {
+  document.getElementById('predictions-list').innerHTML = SAMPLE_PREDS.map((p,i) => `
+    <div class="pred-history-item" style="animation-delay:${i*.04}s">
+      <div class="pred-match-info">
+        <div class="pred-match-name">${escHtml(p.match)}</div>
+        <div class="pred-match-league">${escHtml(p.league)} · ${p.time}</div>
+      </div>
+      <div class="pred-result-col">
+        <span class="pred-pick ${p.result}">${p.pick.toUpperCase()}</span>
+        ${p.result!=='pending'?`<div style="font-size:10px;color:var(--muted);margin-top:4px">Result: ${p.score}</div>`:''}
+      </div>
+      <div class="pred-pts-col ${p.result==='pending'?'pending':'earned'}">
+        ${p.result==='pending'?'—':`+${p.points}`}
+        <div style="font-size:9px;color:var(--muted);font-weight:400">pts</div>
+      </div>
+    </div>`).join('');
+}
+
+function withdrawEarnings() {
+  if (!walletAddress) { showToast('Connect wallet first!', true); return; }
+  openModal('withdraw-modal');
+}
+
+async function confirmWithdraw() {
+  closeModal('withdraw-modal');
+  showToast('Deploy BaseFootball.sol contract to enable withdrawals on Base!', true);
+}
+
+// Show earnings when wallet connects
+const origUpdateUI = updateWalletUI;
+updateWalletUI = function() {
+  origUpdateUI.call(this);
+  if (walletAddress) {
+    document.getElementById('connect-prompt').style.display  = 'none';
+    document.getElementById('earnings-content').style.display= 'block';
+    renderEarnings();
+  } else {
+    document.getElementById('connect-prompt').style.display  = 'block';
+    document.getElementById('earnings-content').style.display= 'none';
+  }
+};
+
+window.addEventListener('load', () => {
+  if (walletAddress) {
+    document.getElementById('connect-prompt').style.display  = 'none';
+    document.getElementById('earnings-content').style.display= 'block';
+    renderEarnings();
+  }
+});
+</script>
+
+<!-- MOBILE BOTTOM NAV -->
+<nav class="mobile-nav">
+  <div class="mobile-nav-inner">
+    <a href="index.html" class="mob-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </a>
+    <a href="matches.html" class="mob-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Matches
+    </a>
+    <a href="creators.html" class="mob-nav-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      Creators
+    </a>
+    <a href="earnings.html" class="mob-nav-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Earnings
+    </a>
+  </div>
+</nav>
+
+</body>
+</html>
