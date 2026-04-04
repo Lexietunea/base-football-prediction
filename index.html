@@ -1540,9 +1540,35 @@ const SAMPLE_POSTS = [
 // ═══════════════════════════════════════════════════
 // INIT
 // ═══════════════════════════════════════════════════
-window.addEventListener('load', () => {
-  allPosts = [...SAMPLE_POSTS];
+async function loadPostsFromDB() {
+  try {
+    const res  = await fetch('http://localhost:3001/api/posts');
+    const data = await res.json();
+    if (data.success && data.posts.length) {
+      allPosts = data.posts.map(p => ({
+        id: p.id, author: p.username,
+        initials: (p.username||'FA').slice(0,2).toUpperCase(),
+        gradient: 'linear-gradient(135deg,#0052ff,#00d4ff)',
+        badge:'Creator', team: p.team_tag, league: p.league_tag,
+        content: p.content,
+        media: (p.media||[]).map(m=>({type:m.type, url:`http://localhost:3001${m.url}`})),
+        likes: p.likes||0, comments: parseInt(p.reply_count)||0,
+        replies:[], time: timeAgo(p.created_at),
+        wallet: p.wallet_address, type: p.post_type||'text',
+        created_at: p.created_at,
+      }));
+      const sampleNotInDB = SAMPLE_POSTS.filter(s=>!allPosts.find(p=>p.id===s.id));
+      allPosts = [...allPosts, ...sampleNotInDB];
+    } else {
+      allPosts = [...SAMPLE_POSTS];
+    }
+  } catch(e) {
+    allPosts = [...SAMPLE_POSTS];
+  }
   renderFeed();
+}
+window.addEventListener('load', async () => {
+  await loadPostsFromDB();
 
   // Animate fan counter
   let fans = 24800;
