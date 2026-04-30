@@ -48,7 +48,7 @@ app.get('/matches.html',  (req, res) => res.sendFile(path.join(__dirname, '../ma
 app.get('/earnings.html', (req, res) => res.sendFile(path.join(__dirname, '../earnings.html')));
 app.get('/shared.css',    (req, res) => res.sendFile(path.join(__dirname, '../shared.css')));
 app.get('/shared.js',     (req, res) => res.sendFile(path.join(__dirname, '../shared.js')));
-
+app.get('/penalty-shootout.html', (req, res) => res.sendFile(path.join(__dirname, '../penalty-shootout.html')));
 // ── HEALTH CHECK ────────────────────────────────────────────
 app.get('/health', (req, res) => {
   res.json({
