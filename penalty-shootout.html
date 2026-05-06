@@ -1,944 +1,966 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
-<title>Base Football — Penalty Shootout</title>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet">
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Base Football — Penalty Arena</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;600;700;900&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.7.0/ethers.umd.min.js"></script>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-
-  :root {
-    --base-blue: #0052FF;
-    --base-dark: #0a0a0f;
-    --base-mid: #12121a;
-    --grass: #1a7a2e;
-    --grass-light: #22a03c;
-    --gold: #FFD700;
-    --white: #ffffff;
-    --red: #ff3b3b;
-    --green: #00e676;
-  }
-
-  body {
-    background: var(--base-dark);
-    font-family: 'Inter', sans-serif;
-    color: var(--white);
-    min-height: 100vh;
-    overflow-x: hidden;
-    user-select: none;
-  }
-
-  /* HEADER */
-  .header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 16px 20px;
-    background: var(--base-mid);
-    border-bottom: 2px solid var(--base-blue);
-  }
-
-  .logo {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    font-family: 'Bebas Neue', cursive;
-    font-size: 22px;
-    letter-spacing: 1px;
-  }
-
-  .logo-icon {
-    width: 36px;
-    height: 36px;
-    background: var(--base-blue);
-    border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 20px;
-  }
-
-  .score-header {
-    display: flex;
-    gap: 20px;
-    align-items: center;
-  }
-
-  .score-pill {
-    background: rgba(0, 82, 255, 0.15);
-    border: 1px solid var(--base-blue);
-    border-radius: 20px;
-    padding: 6px 14px;
-    font-size: 13px;
-    font-weight: 700;
-    color: var(--base-blue);
-  }
-
-  /* MAIN GAME AREA */
-  .game-container {
-    padding: 16px;
-    max-width: 480px;
-    margin: 0 auto;
-  }
-
-  /* STATS BAR */
-  .stats-bar {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .stat-card {
-    background: var(--base-mid);
-    border: 1px solid rgba(255,255,255,0.08);
-    border-radius: 12px;
-    padding: 12px;
-    text-align: center;
-  }
-
-  .stat-value {
-    font-family: 'Bebas Neue', cursive;
-    font-size: 28px;
-    color: var(--base-blue);
-    line-height: 1;
-  }
-
-  .stat-label {
-    font-size: 10px;
-    color: rgba(255,255,255,0.5);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-top: 4px;
-  }
-
-  /* KICKS REMAINING */
-  .kicks-row {
-    display: flex;
-    justify-content: center;
-    gap: 8px;
-    margin-bottom: 16px;
-  }
-
-  .kick-dot {
-    width: 28px;
-    height: 28px;
-    border-radius: 50%;
-    border: 2px solid rgba(255,255,255,0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    transition: all 0.3s;
-  }
-
-  .kick-dot.scored { border-color: var(--green); background: rgba(0,230,118,0.2); }
-  .kick-dot.missed { border-color: var(--red); background: rgba(255,59,59,0.2); }
-  .kick-dot.active { border-color: var(--base-blue); background: rgba(0,82,255,0.2); animation: pulse 1s infinite; }
-
-  @keyframes pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-  }
-
-  /* STADIUM / PITCH AREA */
-  .stadium {
-    position: relative;
-    background: linear-gradient(180deg, #0d1b4b 0%, #1a2d6b 30%, #0d1b4b 100%);
-    border-radius: 20px;
-    overflow: hidden;
-    margin-bottom: 16px;
-    border: 2px solid rgba(0, 82, 255, 0.3);
-    height: 340px;
-  }
-
-  /* Crowd effect */
-  .crowd {
-    position: absolute;
-    top: 0;
-    left: 0;
-    right: 0;
-    height: 80px;
-    background: repeating-linear-gradient(
-      90deg,
-      rgba(0,82,255,0.3) 0px, rgba(0,82,255,0.3) 4px,
-      rgba(255,255,255,0.1) 4px, rgba(255,255,255,0.1) 8px,
-      rgba(0,52,180,0.2) 8px, rgba(0,52,180,0.2) 12px
-    );
-    opacity: 0.6;
-  }
-
-  /* Floodlights */
-  .floodlight {
-    position: absolute;
-    top: 10px;
-    width: 4px;
-    height: 50px;
-    background: rgba(255,255,255,0.7);
-  }
-  .floodlight.left { left: 30px; }
-  .floodlight.right { right: 30px; }
-  .floodlight::after {
-    content: '';
-    position: absolute;
-    bottom: 0;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 40px solid transparent;
-    border-right: 40px solid transparent;
-    border-top: 120px solid rgba(255,255,230,0.06);
-  }
-
-  /* Pitch */
-  .pitch {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 240px;
-    background: linear-gradient(180deg, var(--grass) 0%, var(--grass-light) 50%, var(--grass) 100%);
-  }
-
-  /* Pitch stripes */
-  .pitch::before {
-    content: '';
-    position: absolute;
-    inset: 0;
-    background: repeating-linear-gradient(
-      90deg,
-      rgba(0,0,0,0.08) 0px, rgba(0,0,0,0.08) 40px,
-      transparent 40px, transparent 80px
-    );
-  }
-
-  /* Penalty spot */
-  .penalty-spot {
-    position: absolute;
-    bottom: 60px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 8px;
-    height: 8px;
-    background: white;
-    border-radius: 50%;
-  }
-
-  /* Penalty arc */
-  .penalty-arc {
-    position: absolute;
-    bottom: 120px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 120px;
-    height: 60px;
-    border: 2px solid rgba(255,255,255,0.4);
-    border-top: none;
-    border-radius: 0 0 60px 60px;
-  }
-
-  /* GOAL */
-  .goal {
-    position: absolute;
-    top: 75px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 260px;
-    height: 140px;
-  }
-
-  .goal-frame {
-    position: absolute;
-    inset: 0;
-    border: 4px solid white;
-    border-bottom: none;
-    border-radius: 4px 4px 0 0;
-  }
-
-  /* Goal net lines */
-  .goal-net {
-    position: absolute;
-    inset: 4px 4px 0 4px;
-    background:
-      repeating-linear-gradient(90deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 30px),
-      repeating-linear-gradient(0deg, rgba(255,255,255,0.15) 0px, rgba(255,255,255,0.15) 1px, transparent 1px, transparent 25px);
-    background-color: rgba(0, 10, 40, 0.6);
-  }
-
-  /* GOAL ZONES — clickable areas */
-  .goal-zones {
-    position: absolute;
-    inset: 4px 4px 0 4px;
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    grid-template-rows: repeat(2, 1fr);
-    gap: 2px;
-    z-index: 10;
-  }
-
-  .zone {
-    border-radius: 4px;
-    cursor: pointer;
-    transition: background 0.2s;
-    position: relative;
-    background: transparent;
-  }
-
-  .zone:hover {
-    background: rgba(0, 82, 255, 0.25);
-    border: 1px solid rgba(0, 82, 255, 0.5);
-  }
-
-  .zone.active-zone {
-    pointer-events: all;
-  }
-
-  .zone.disabled {
-    pointer-events: none;
-  }
-
-  /* BALL */
-  .ball {
-    position: absolute;
-    bottom: 52px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 28px;
-    height: 28px;
-    z-index: 20;
-    transition: none;
-    font-size: 26px;
-    line-height: 1;
-    text-align: center;
-  }
-
-  .ball.shooting {
-    transition: all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-  }
-
-  /* GOALKEEPER */
-  .goalkeeper {
-    position: absolute;
-    top: 90px;
-    left: 50%;
-    transform: translateX(-50%);
-    font-size: 36px;
-    z-index: 15;
-    transition: left 0.3s ease-out;
-  }
-
-  /* RESULT OVERLAY */
-  .result-overlay {
-    position: absolute;
-    inset: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 30;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s;
-  }
-
-  .result-overlay.show {
-    opacity: 1;
-  }
-
-  .result-text {
-    font-family: 'Bebas Neue', cursive;
-    font-size: 64px;
-    letter-spacing: 4px;
-    text-shadow: 0 0 30px currentColor;
-    animation: resultPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-  }
-
-  .result-text.goal { color: var(--green); }
-  .result-text.miss { color: var(--red); }
-
-  @keyframes resultPop {
-    0% { transform: scale(0.5); opacity: 0; }
-    100% { transform: scale(1); opacity: 1; }
-  }
-
-  /* INSTRUCTION */
-  .instruction {
-    text-align: center;
-    margin-bottom: 16px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.5);
-    letter-spacing: 0.5px;
-  }
-
-  .instruction span {
-    color: var(--base-blue);
-    font-weight: 700;
-  }
-
-  /* ACTION BUTTON */
-  .action-btn {
-    width: 100%;
-    padding: 16px;
-    border-radius: 14px;
-    border: none;
-    font-family: 'Bebas Neue', cursive;
-    font-size: 22px;
-    letter-spacing: 2px;
-    cursor: pointer;
-    transition: all 0.2s;
-    background: var(--base-blue);
-    color: white;
-  }
-
-  .action-btn:hover { transform: translateY(-2px); box-shadow: 0 8px 24px rgba(0,82,255,0.4); }
-  .action-btn:active { transform: translateY(0); }
-  .action-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
-
-  /* GAME OVER SCREEN */
-  .game-over {
-    display: none;
-    text-align: center;
-    padding: 24px;
-    background: var(--base-mid);
-    border-radius: 20px;
-    border: 2px solid var(--base-blue);
-    margin-bottom: 16px;
-  }
-
-  .game-over.show { display: block; }
-
-  .final-score {
-    font-family: 'Bebas Neue', cursive;
-    font-size: 72px;
-    color: var(--base-blue);
-    line-height: 1;
-  }
-
-  .final-label {
-    font-size: 12px;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
-    letter-spacing: 2px;
-    margin-bottom: 8px;
-  }
-
-  .rating {
-    font-size: 32px;
-    margin: 12px 0;
-  }
-
-  .rating-text {
-    font-weight: 700;
-    font-size: 18px;
-    margin-bottom: 16px;
-  }
-
-  .leaderboard-tease {
-    background: rgba(0,82,255,0.1);
-    border: 1px solid rgba(0,82,255,0.3);
-    border-radius: 12px;
-    padding: 12px;
-    font-size: 13px;
-    color: rgba(255,255,255,0.7);
-    margin-bottom: 16px;
-  }
-
-  .leaderboard-tease strong { color: var(--gold); }
-
-  /* LEADERBOARD */
-  .leaderboard {
-    background: var(--base-mid);
-    border-radius: 16px;
-    padding: 16px;
-    border: 1px solid rgba(255,255,255,0.08);
-    margin-bottom: 16px;
-  }
-
-  .lb-title {
-    font-family: 'Bebas Neue', cursive;
-    font-size: 18px;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .lb-row {
-    display: flex;
-    align-items: center;
-    padding: 10px 0;
-    border-bottom: 1px solid rgba(255,255,255,0.05);
-    gap: 12px;
-  }
-
-  .lb-row:last-child { border-bottom: none; }
-
-  .lb-rank {
-    font-family: 'Bebas Neue', cursive;
-    font-size: 18px;
-    width: 24px;
-    color: rgba(255,255,255,0.4);
-  }
-
-  .lb-rank.gold { color: var(--gold); }
-  .lb-rank.silver { color: #C0C0C0; }
-  .lb-rank.bronze { color: #CD7F32; }
-
-  .lb-avatar {
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background: var(--base-blue);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: 700;
-  }
-
-  .lb-name {
-    flex: 1;
-    font-size: 14px;
-    font-weight: 600;
-  }
-
-  .lb-score {
-    font-family: 'Bebas Neue', cursive;
-    font-size: 20px;
-    color: var(--base-blue);
-  }
-
-  /* CONFETTI */
-  .confetti-container {
-    position: fixed;
-    inset: 0;
-    pointer-events: none;
-    z-index: 100;
-    overflow: hidden;
-  }
-
-  .confetti-piece {
-    position: absolute;
-    width: 8px;
-    height: 8px;
-    animation: confettiFall linear forwards;
-  }
-
-  @keyframes confettiFall {
-    0% { transform: translateY(-20px) rotate(0deg); opacity: 1; }
-    100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-  }
-
-  /* COMING SOON BADGE */
-  .coming-soon {
-    display: inline-block;
-    background: rgba(255,215,0,0.15);
-    border: 1px solid var(--gold);
-    color: var(--gold);
-    font-size: 10px;
-    font-weight: 700;
-    padding: 2px 8px;
-    border-radius: 20px;
-    letter-spacing: 1px;
-    text-transform: uppercase;
-  }
+*{margin:0;padding:0;box-sizing:border-box;}
+:root{
+  --blue:#0052FF;--dark:#08080f;--mid:#11111a;
+  --gold:#FFD700;--green:#00e676;--red:#ff3b3b;
+  --orange:#FF9500;--surface:#1a1a2e;
+}
+body{background:var(--dark);font-family:'Inter',sans-serif;color:#fff;min-height:100vh;overflow-x:hidden;user-select:none;}
+
+/* ── HEADER ── */
+.header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:12px 16px;background:var(--mid);
+  border-bottom:2px solid var(--blue);
+  position:sticky;top:0;z-index:100;
+  gap:10px;
+}
+.header-left{display:flex;align-items:center;gap:10px;}
+.logo{display:flex;align-items:center;gap:8px;font-family:'Bebas Neue';font-size:18px;text-decoration:none;color:#fff;}
+.logo-icon{width:32px;height:32px;background:var(--blue);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;box-shadow:0 0 12px rgba(0,82,255,0.4);flex-shrink:0;}
+.logo span{color:var(--blue);}
+.back-btn{background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:8px;padding:6px 10px;font-size:11px;color:rgba(255,255,255,0.6);cursor:pointer;text-decoration:none;white-space:nowrap;transition:all .2s;}
+.back-btn:hover{border-color:var(--blue);color:var(--blue);}
+.header-right{display:flex;align-items:center;gap:8px;flex-shrink:0;}
+
+/* WALLET BUTTON */
+.btn-wallet{
+  display:flex;align-items:center;gap:6px;
+  background:var(--blue);color:#fff;border:none;
+  border-radius:8px;padding:8px 14px;
+  font-family:'Inter';font-size:12px;font-weight:700;
+  cursor:pointer;transition:all .2s;
+  box-shadow:0 0 12px rgba(0,82,255,0.4);
+  white-space:nowrap;
+}
+.btn-wallet:hover{background:#0039c0;}
+.btn-wallet.connected{background:rgba(0,230,118,0.1);border:1px solid var(--green);color:var(--green);box-shadow:none;}
+
+/* SOUND BUTTON */
+.snd-btn{width:34px;height:34px;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;flex-shrink:0;}
+
+/* ── DAILY CHECK-IN BANNER ── */
+.checkin-banner{
+  max-width:480px;margin:12px auto;padding:0 16px;
+}
+.checkin-card{
+  background:linear-gradient(135deg,rgba(255,215,0,0.1),rgba(0,82,255,0.1));
+  border:1px solid rgba(255,215,0,0.3);
+  border-radius:14px;padding:14px 16px;
+  display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.checkin-left{display:flex;align-items:center;gap:10px;}
+.checkin-icon{font-size:28px;flex-shrink:0;}
+.checkin-title{font-family:'Bebas Neue';font-size:16px;letter-spacing:1px;color:var(--gold);}
+.checkin-sub{font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.checkin-streak{font-family:'Bebas Neue';font-size:13px;color:var(--orange);margin-top:2px;}
+.btn-checkin{
+  background:var(--gold);color:#000;border:none;
+  border-radius:10px;padding:10px 18px;
+  font-family:'Bebas Neue';font-size:16px;letter-spacing:1px;
+  cursor:pointer;transition:all .2s;flex-shrink:0;
+  white-space:nowrap;
+}
+.btn-checkin:hover{transform:translateY(-1px);box-shadow:0 4px 16px rgba(255,215,0,0.35);}
+.btn-checkin:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-checkin.done{background:rgba(0,230,118,0.15);color:var(--green);border:1px solid var(--green);}
+
+/* ── SCREENS ── */
+.screen{display:none;max-width:480px;margin:0 auto;padding:12px 16px 80px;}
+.screen.active{display:block;}
+
+/* TEAM SELECT */
+.sec-title{font-family:'Bebas Neue';font-size:22px;letter-spacing:1px;margin-bottom:3px;}
+.sec-sub{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:14px;}
+.sel-label{font-family:'Bebas Neue';font-size:11px;letter-spacing:2px;color:rgba(255,255,255,0.35);margin:14px 0 8px;}
+.teams-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+.team-card{background:var(--mid);border:2px solid rgba(255,255,255,0.07);border-radius:14px;padding:12px 10px;cursor:pointer;text-align:center;transition:all .2s;position:relative;}
+.team-card:hover{border-color:rgba(255,255,255,0.25);transform:translateY(-1px);}
+.tc-emoji{font-size:28px;margin-bottom:5px;}
+.tc-name{font-family:'Bebas Neue';font-size:13px;}
+.tc-league{font-size:9px;color:rgba(255,255,255,0.35);margin-top:1px;}
+.tc-rating{font-size:10px;font-weight:700;margin-top:4px;}
+.tc-badge{position:absolute;top:5px;right:5px;font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;color:#fff;}
+.vs-div{display:flex;align-items:center;gap:10px;margin:14px 0;}
+.vs-div::before,.vs-div::after{content:'';flex:1;height:1px;background:rgba(255,255,255,0.07);}
+.vs-txt{font-family:'Bebas Neue';font-size:18px;color:rgba(255,255,255,0.25);}
+.btn{width:100%;padding:14px;border-radius:13px;border:none;font-family:'Bebas Neue';font-size:19px;letter-spacing:2px;cursor:pointer;transition:all .2s;}
+.btn-blue{background:var(--blue);color:#fff;}
+.btn-blue:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,82,255,0.4);}
+.btn-blue:disabled{opacity:.3;cursor:not-allowed;transform:none;box-shadow:none;}
+.btn-ghost{background:rgba(255,255,255,0.05);color:#fff;margin-top:8px;}
+
+/* GAME SCREEN */
+.team-banner{display:flex;align-items:center;justify-content:space-between;background:var(--mid);border-radius:12px;padding:10px 14px;margin-bottom:10px;border:1px solid rgba(255,255,255,0.06);}
+.tb-side{display:flex;align-items:center;gap:8px;}
+.tb-emoji{font-size:20px;}
+.tb-name-txt{font-family:'Bebas Neue';font-size:13px;}
+.tb-sub{font-size:9px;color:rgba(255,255,255,0.35);}
+.turn-pill{font-family:'Bebas Neue';font-size:11px;letter-spacing:1px;padding:4px 10px;border-radius:10px;}
+.turn-shoot{background:rgba(0,82,255,0.2);color:var(--blue);border:1px solid var(--blue);}
+.turn-save{background:rgba(255,149,0,0.15);color:var(--orange);border:1px solid var(--orange);}
+
+.scoreboard{background:var(--mid);border:1px solid rgba(255,255,255,0.07);border-radius:14px;padding:14px;margin-bottom:10px;}
+.sb-teams{display:flex;align-items:center;justify-content:space-between;}
+.sb-team{text-align:center;flex:1;}
+.sb-team-emoji{font-size:24px;}
+.sb-team-name{font-family:'Bebas Neue';font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;}
+.sb-nums{display:flex;align-items:center;gap:8px;font-family:'Bebas Neue';font-size:38px;}
+.sb-sep{color:rgba(255,255,255,0.2);font-size:24px;}
+.kicks-row{display:flex;justify-content:center;gap:5px;margin-top:10px;}
+.kd{width:22px;height:22px;border-radius:50%;border:2px solid rgba(255,255,255,0.12);display:flex;align-items:center;justify-content:center;font-size:10px;transition:all .3s;}
+.kd.scored{border-color:var(--green);background:rgba(0,230,118,0.18);}
+.kd.missed{border-color:var(--red);background:rgba(255,59,59,0.12);}
+.kd.active{border-color:var(--blue);background:rgba(0,82,255,0.12);animation:kdPulse 1s infinite;}
+@keyframes kdPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.12)}}
+
+.phase-row{text-align:center;margin-bottom:10px;}
+.phase-pill{display:inline-flex;align-items:center;gap:5px;background:rgba(0,82,255,0.12);border:1px solid var(--blue);border-radius:20px;padding:5px 14px;font-size:12px;font-weight:700;color:var(--blue);}
+.phase-pill.save-mode{background:rgba(255,149,0,0.1);border-color:var(--orange);color:var(--orange);}
+.instr{text-align:center;font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:10px;}
+.instr span{color:var(--blue);font-weight:700;}
+.instr span.orange{color:var(--orange);}
+
+/* ── STADIUM ── */
+.stadium{position:relative;border-radius:16px;overflow:hidden;border:2px solid rgba(0,82,255,0.2);height:270px;margin-bottom:12px;}
+.sky{position:absolute;inset:0;background:linear-gradient(180deg,#061040 0%,#0d1e6a 40%,#0a1450 100%);}
+.crowd{position:absolute;top:0;left:0;right:0;height:60px;background:repeating-linear-gradient(90deg,rgba(0,82,255,0.32) 0 3px,rgba(255,255,255,0.07) 3px 6px,rgba(0,40,160,0.18) 6px 9px);opacity:.7;}
+.fl{position:absolute;top:7px;width:3px;height:36px;background:rgba(255,255,255,0.8);}
+.fl-l{left:18px;}.fl-r{right:18px;}
+.fl::after{content:'';position:absolute;bottom:0;left:50%;transform:translateX(-50%);border-left:28px solid transparent;border-right:28px solid transparent;border-top:80px solid rgba(255,255,230,0.04);}
+.pitch{position:absolute;bottom:0;left:0;right:0;height:190px;background:linear-gradient(180deg,#1a7a2e,#22a03c 50%,#1a7a2e);}
+.pitch::before{content:'';position:absolute;inset:0;background:repeating-linear-gradient(90deg,rgba(0,0,0,0.06) 0 34px,transparent 34px 68px);}
+.six-yd{position:absolute;bottom:0;left:50%;transform:translateX(-50%);width:140px;height:40px;border:1.5px solid rgba(255,255,255,0.22);border-bottom:none;}
+.pen-arc{position:absolute;bottom:85px;left:50%;transform:translateX(-50%);width:100px;height:48px;border:1.5px solid rgba(255,255,255,0.3);border-top:none;border-radius:0 0 50px 50px;}
+.pen-spot{position:absolute;bottom:40px;left:50%;transform:translateX(-50%);width:6px;height:6px;background:#fff;border-radius:50%;}
+.goal{position:absolute;top:58px;left:50%;transform:translateX(-50%);width:220px;height:116px;}
+.gf{position:absolute;inset:0;border:4px solid #fff;border-bottom:none;border-radius:3px 3px 0 0;}
+.gn{position:absolute;inset:4px 4px 0;background:repeating-linear-gradient(90deg,rgba(255,255,255,0.1) 0 1px,transparent 1px 26px),repeating-linear-gradient(0deg,rgba(255,255,255,0.1) 0 1px,transparent 1px 22px);background-color:rgba(0,6,30,0.6);}
+.goal-zones{position:absolute;inset:4px 4px 0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(2,1fr);gap:2px;z-index:10;}
+.zone{border-radius:3px;cursor:pointer;transition:background .15s;}
+.zone.sh:hover{background:rgba(0,82,255,0.28);border:1px dashed rgba(0,82,255,0.55);}
+.zone.sv:hover{background:rgba(255,149,0,0.22);border:1px dashed rgba(255,149,0,0.5);}
+.zone.off{pointer-events:none;}
+.gk{position:absolute;top:70px;left:50%;transform:translateX(-50%);font-size:28px;z-index:15;transition:left .22s ease-out;}
+.ball{position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:20px;z-index:20;}
+.ball.fly{transition:all .42s cubic-bezier(0.25,0.46,0.45,0.94);}
+.res-overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;z-index:30;opacity:0;pointer-events:none;transition:opacity .22s;background:rgba(0,0,0,0.15);}
+.res-overlay.show{opacity:1;}
+.res-txt{font-family:'Bebas Neue';font-size:54px;letter-spacing:3px;text-shadow:0 0 28px currentColor;animation:resPop .32s cubic-bezier(0.175,0.885,0.32,1.275);}
+.g{color:var(--green);}.m{color:var(--red);}.sv-c{color:var(--orange);}.sc-c{color:#64B5F6;}
+@keyframes resPop{0%{transform:scale(0.4);opacity:0}100%{transform:scale(1);opacity:1}}
+.flag-l{position:absolute;top:54px;left:calc(50% - 110px);font-size:13px;z-index:5;}
+.flag-r{position:absolute;top:54px;left:calc(50% + 97px);font-size:13px;z-index:5;}
+
+/* GAME OVER */
+.go-card{background:var(--mid);border-radius:18px;border:2px solid var(--blue);padding:20px;text-align:center;margin-bottom:14px;}
+.go-trophy{font-size:48px;margin-bottom:6px;}
+.go-result{font-family:'Bebas Neue';font-size:26px;letter-spacing:2px;margin-bottom:3px;}
+.go-teams-txt{font-size:12px;color:rgba(255,255,255,0.4);margin-bottom:8px;}
+.go-score{font-family:'Bebas Neue';font-size:50px;color:var(--blue);line-height:1;}
+.go-rating{font-size:13px;font-weight:600;margin:10px 0;}
+.xp-box{background:rgba(255,215,0,0.08);border:1px solid var(--gold);border-radius:11px;padding:11px;margin-bottom:12px;font-size:12px;}
+.xp-box strong{color:var(--gold);font-size:20px;display:block;}
+.eth-box{background:rgba(0,82,255,0.07);border:1px solid rgba(0,82,255,0.25);border-radius:11px;padding:11px;font-size:11px;color:rgba(255,255,255,0.5);margin-bottom:14px;}
+
+/* LEADERBOARD */
+.lb{background:var(--mid);border-radius:14px;padding:14px;border:1px solid rgba(255,255,255,0.06);margin-bottom:16px;}
+.lb-head{display:flex;align-items:center;justify-content:space-between;margin-bottom:11px;}
+.lb-title{font-family:'Bebas Neue';font-size:17px;}
+.lb-badge{font-size:9px;font-weight:700;padding:3px 8px;border-radius:9px;background:rgba(255,215,0,0.1);color:var(--gold);border:1px solid rgba(255,215,0,0.25);}
+.lb-row{display:flex;align-items:center;padding:8px 0;border-bottom:1px solid rgba(255,255,255,0.04);gap:9px;}
+.lb-row:last-child{border:none;}
+.lb-rank{font-family:'Bebas Neue';font-size:15px;width:20px;color:rgba(255,255,255,0.3);}
+.lb-rank.r1{color:var(--gold)}.lb-rank.r2{color:#C0C0C0}.lb-rank.r3{color:#CD7F32}
+.lb-av{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;}
+.lb-info{flex:1;}
+.lb-name{font-size:12px;font-weight:600;}
+.lb-team{font-size:9px;color:rgba(255,255,255,0.3);}
+.lb-pts-col{text-align:right;}
+.lb-pts{font-family:'Bebas Neue';font-size:17px;color:var(--blue);}
+.lb-wins{font-size:9px;color:rgba(255,255,255,0.3);}
+
+/* CONFETTI */
+.cf-wrap{position:fixed;inset:0;pointer-events:none;z-index:99;overflow:hidden;}
+.cp{position:absolute;width:7px;height:7px;animation:cfFall linear forwards;}
+@keyframes cfFall{0%{transform:translateY(-20px) rotate(0);opacity:1}100%{transform:translateY(100vh) rotate(720deg);opacity:0}}
+
+/* WALLET MODAL */
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.85);backdrop-filter:blur(8px);z-index:1000;align-items:center;justify-content:center;padding:20px;}
+.overlay.open{display:flex;}
+.modal{background:#1a1a2e;border:1px solid rgba(0,82,255,0.3);border-radius:20px;padding:24px;width:100%;max-width:360px;animation:popIn .25s ease;}
+.modal-title{font-family:'Bebas Neue';font-size:24px;letter-spacing:1px;margin-bottom:6px;}
+.modal-sub{font-size:13px;color:rgba(255,255,255,0.5);margin-bottom:20px;line-height:1.5;}
+@keyframes popIn{from{transform:scale(.9);opacity:0}to{transform:scale(1);opacity:1}}
+.w-opt{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid rgba(255,255,255,0.1);border-radius:13px;cursor:pointer;transition:all .2s;margin-bottom:10px;}
+.w-opt:hover{border-color:var(--blue);background:rgba(0,82,255,0.05);}
+.w-ico{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;font-size:22px;flex-shrink:0;}
+.w-name{font-size:14px;font-weight:600;}
+.w-desc{font-size:11px;color:rgba(255,255,255,0.4);margin-top:2px;}
+.btn-cancel{width:100%;padding:11px;border:1px solid rgba(255,255,255,0.1);border-radius:10px;background:none;color:rgba(255,255,255,0.5);font-family:'Inter';font-size:14px;cursor:pointer;margin-top:4px;}
+
+/* TOAST */
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(80px);background:#1a1a2e;border-radius:12px;padding:12px 20px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px;z-index:3000;opacity:0;max-width:320px;width:90%;text-align:center;justify-content:center;transition:all .35s cubic-bezier(.34,1.56,.64,1);border:1px solid var(--green);color:var(--green);}
+.toast.err{border-color:var(--red);color:var(--red);}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+
+/* MOBILE NAV */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:rgba(10,10,15,.97);border-top:1px solid rgba(255,255,255,0.08);z-index:50;padding:8px 0 max(8px,env(safe-area-inset-bottom));backdrop-filter:blur(20px);}
+.mob-nav-inner{display:flex;justify-content:space-around;}
+.mob-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 12px;cursor:pointer;color:rgba(255,255,255,0.4);text-decoration:none;font-size:10px;transition:color .2s;}
+.mob-item:hover,.mob-item.active{color:var(--blue);}
+.mob-item svg{width:20px;height:20px;}
+
+/* ── RESPONSIVE ── */
+@media(max-width:480px){
+  .header{padding:10px 12px;}
+  .logo{font-size:16px;}
+  .logo-icon{width:28px;height:28px;font-size:14px;}
+  .btn-wallet{padding:7px 10px;font-size:11px;}
+  .btn-wallet span.wallet-label{display:none;}
+  .screen{padding:10px 12px 80px;}
+  .stadium{height:240px;}
+  .gk{font-size:24px;}
+  .ball{font-size:18px;}
+  .res-txt{font-size:44px;}
+  .sb-nums{font-size:32px;}
+  .teams-grid{grid-template-columns:1fr 1fr;}
+  .tc-emoji{font-size:24px;}
+  .mob-nav{display:block;}
+  .checkin-banner{padding:0 12px;}
+}
+@media(max-width:360px){
+  .stadium{height:210px;}
+  .goal{width:190px;height:100px;}
+  .teams-grid{gap:6px;}
+  .btn-wallet{padding:6px 8px;}
+}
 </style>
 </head>
 <body>
 
-<!-- HEADER -->
+<div class="cf-wrap" id="cfWrap"></div>
+
+<!-- ── HEADER ── -->
 <div class="header">
-  <div class="logo">
-    <div class="logo-icon">⚽</div>
-    <div>BASE <span style="color: var(--base-blue)">FOOTBALL</span></div>
+  <div class="header-left">
+    <a href="index.html" class="back-btn">← Home</a>
+    <a class="logo" href="index.html">
+      <div class="logo-icon">⚽</div>
+      BASE <span>FOOTBALL</span>
+    </a>
   </div>
-  <div class="score-header">
-    <div class="score-pill">🏆 Daily Challenge</div>
+  <div class="header-right">
+    <div class="snd-btn" id="sndBtn" onclick="toggleSnd()">🔊</div>
+    <button class="btn-wallet" id="walletBtn" onclick="openWalletModal()">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><rect x="2" y="7" width="20" height="15" rx="2"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2"/></svg>
+      <span id="walletText" class="wallet-label">Connect</span>
+    </button>
   </div>
 </div>
 
-<!-- CONFETTI -->
-<div class="confetti-container" id="confettiContainer"></div>
-
-<div class="game-container">
-
-  <!-- STATS -->
-  <div class="stats-bar">
-    <div class="stat-card">
-      <div class="stat-value" id="totalScore">0</div>
-      <div class="stat-label">Goals</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="streak">0</div>
-      <div class="stat-label">Streak 🔥</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-value" id="bestScore">0</div>
-      <div class="stat-label">Best Today</div>
-    </div>
-  </div>
-
-  <!-- KICKS REMAINING -->
-  <div class="kicks-row" id="kicksRow">
-    <div class="kick-dot active">⚽</div>
-    <div class="kick-dot">⚽</div>
-    <div class="kick-dot">⚽</div>
-    <div class="kick-dot">⚽</div>
-    <div class="kick-dot">⚽</div>
-  </div>
-
-  <!-- INSTRUCTION -->
-  <div class="instruction" id="instruction">
-    <span>Tap a zone</span> in the goal to shoot — outsmart the keeper!
-  </div>
-
-  <!-- STADIUM -->
-  <div class="stadium" id="stadium">
-    <div class="crowd"></div>
-    <div class="floodlight left"></div>
-    <div class="floodlight right"></div>
-
-    <div class="pitch">
-      <div class="penalty-arc"></div>
-      <div class="penalty-spot"></div>
-    </div>
-
-    <!-- GOAL -->
-    <div class="goal">
-      <div class="goal-frame"></div>
-      <div class="goal-net"></div>
-      <div class="goal-zones" id="goalZones">
-        <div class="zone active-zone" data-zone="0" onclick="shoot(0)"></div>
-        <div class="zone active-zone" data-zone="1" onclick="shoot(1)"></div>
-        <div class="zone active-zone" data-zone="2" onclick="shoot(2)"></div>
-        <div class="zone active-zone" data-zone="3" onclick="shoot(3)"></div>
-        <div class="zone active-zone" data-zone="4" onclick="shoot(4)"></div>
-        <div class="zone active-zone" data-zone="5" onclick="shoot(5)"></div>
+<!-- ── DAILY CHECK-IN BANNER ── -->
+<div class="checkin-banner">
+  <div class="checkin-card" id="checkinCard">
+    <div class="checkin-left">
+      <div class="checkin-icon">🎯</div>
+      <div>
+        <div class="checkin-title">Daily Check-In</div>
+        <div class="checkin-sub">Play daily to build your streak</div>
+        <div class="checkin-streak" id="streakDisplay">🔥 0 day streak</div>
       </div>
     </div>
-
-    <!-- GOALKEEPER -->
-    <div class="goalkeeper" id="goalkeeper">🧤</div>
-
-    <!-- BALL -->
-    <div class="ball" id="ball">⚽</div>
-
-    <!-- RESULT OVERLAY -->
-    <div class="result-overlay" id="resultOverlay">
-      <div class="result-text" id="resultText">GOAL!</div>
-    </div>
+    <button class="btn-checkin" id="checkinBtn" onclick="doCheckin()">
+      CHECK IN
+    </button>
   </div>
-
-  <!-- GAME OVER SCREEN -->
-  <div class="game-over" id="gameOver">
-    <div class="final-label">Final Score</div>
-    <div class="final-score" id="finalScore">0/5</div>
-    <div class="rating" id="ratingEmoji">⚽</div>
-    <div class="rating-text" id="ratingText">Keep practicing!</div>
-    <div class="leaderboard-tease">
-      🏆 Earn <strong>ETH rewards</strong> by topping the weekly leaderboard — coming soon!
-    </div>
-  </div>
-
-  <!-- ACTION BUTTON -->
-  <button class="action-btn" id="actionBtn" onclick="nextKick()" disabled>
-    NEXT KICK →
-  </button>
-
-  <!-- LEADERBOARD -->
-  <div class="leaderboard">
-    <div class="lb-title">
-      🏆 Today's Leaderboard
-      <span class="coming-soon">Live Soon</span>
-    </div>
-    <div class="lb-row">
-      <div class="lb-rank gold">1</div>
-      <div class="lb-avatar">VJ</div>
-      <div class="lb-name">0xVictor_J.base</div>
-      <div class="lb-score">5/5</div>
-    </div>
-    <div class="lb-row">
-      <div class="lb-rank silver">2</div>
-      <div class="lb-avatar">BV</div>
-      <div class="lb-name">0xBarcaVision</div>
-      <div class="lb-score">4/5</div>
-    </div>
-    <div class="lb-row">
-      <div class="lb-rank bronze">3</div>
-      <div class="lb-avatar">KE</div>
-      <div class="lb-name">0xKlopp_era</div>
-      <div class="lb-score">4/5</div>
-    </div>
-    <div class="lb-row">
-      <div class="lb-rank">4</div>
-      <div class="lb-avatar" style="background:#333">?</div>
-      <div class="lb-name" style="color:rgba(255,255,255,0.3)">Could be you...</div>
-      <div class="lb-score" style="color:rgba(255,255,255,0.3)">-</div>
-    </div>
-  </div>
-
 </div>
 
+<!-- ── SCREEN: SELECT ── -->
+<div class="screen active" id="scnSelect">
+  <div class="sec-title">⚽ Penalty Arena</div>
+  <div class="sec-sub">Pick your blockchain team and face the AI</div>
+
+  <div class="sel-label">YOUR TEAM</div>
+  <div class="teams-grid" id="myGrid"></div>
+
+  <div class="vs-div"><div class="vs-txt">VS</div></div>
+
+  <div class="sel-label">OPPONENT (AI)</div>
+  <div class="teams-grid" id="oppGrid"></div>
+
+  <br/>
+  <button class="btn btn-blue" id="startBtn" onclick="startGame()" disabled>⚽ KICK OFF</button>
+  <button class="btn btn-ghost" onclick="rndPick()">🎲 Random Match</button>
+  <br/><br/>
+</div>
+
+<!-- ── SCREEN: GAME ── -->
+<div class="screen" id="scnGame">
+  <div class="team-banner">
+    <div class="tb-side">
+      <div class="tb-emoji" id="tbME"></div>
+      <div><div class="tb-name-txt" id="tbMN"></div><div class="tb-sub">You</div></div>
+    </div>
+    <div class="turn-pill turn-shoot" id="turnPill">SHOOT</div>
+    <div class="tb-side" style="flex-direction:row-reverse">
+      <div class="tb-emoji" id="tbOE"></div>
+      <div style="text-align:right"><div class="tb-name-txt" id="tbON"></div><div class="tb-sub">AI</div></div>
+    </div>
+  </div>
+
+  <div class="scoreboard">
+    <div class="sb-teams">
+      <div class="sb-team"><div class="sb-team-emoji" id="sbME"></div><div class="sb-team-name" id="sbMN"></div></div>
+      <div class="sb-nums">
+        <span id="sbMS" style="color:var(--green)">0</span>
+        <span class="sb-sep">-</span>
+        <span id="sbOS" style="color:var(--red)">0</span>
+      </div>
+      <div class="sb-team"><div class="sb-team-emoji" id="sbOE"></div><div class="sb-team-name" id="sbON"></div></div>
+    </div>
+    <div class="kicks-row" id="kRow"></div>
+  </div>
+
+  <div class="phase-row"><div class="phase-pill" id="phasePill">⚽ Your turn to SHOOT</div></div>
+  <div class="instr" id="instr"><span>Tap a zone</span> in the goal to shoot!</div>
+
+  <div class="stadium" id="stad">
+    <div class="sky"></div>
+    <div class="crowd"></div>
+    <div class="fl fl-l"></div><div class="fl fl-r"></div>
+    <div class="pitch">
+      <div class="six-yd"></div>
+      <div class="pen-arc"></div>
+      <div class="pen-spot"></div>
+    </div>
+    <div class="flag-l" id="flL"></div>
+    <div class="flag-r" id="flR"></div>
+    <div class="goal">
+      <div class="gf"></div><div class="gn"></div>
+      <div class="goal-zones" id="gZones">
+        <div class="zone" data-z="0"></div>
+        <div class="zone" data-z="1"></div>
+        <div class="zone" data-z="2"></div>
+        <div class="zone" data-z="3"></div>
+        <div class="zone" data-z="4"></div>
+        <div class="zone" data-z="5"></div>
+      </div>
+    </div>
+    <div class="gk" id="gk">🧤</div>
+    <div class="ball" id="ball">⚽</div>
+    <div class="res-overlay" id="resOv"><div class="res-txt g" id="resTxt">GOAL!</div></div>
+  </div>
+
+  <button class="btn btn-blue" id="actBtn" disabled>TAP THE GOAL ↑</button>
+</div>
+
+<!-- ── SCREEN: GAME OVER ── -->
+<div class="screen" id="scnOver">
+  <div class="go-card">
+    <div class="go-trophy" id="goTrophy">🏆</div>
+    <div class="go-result" id="goResult">YOU WIN!</div>
+    <div class="go-teams-txt" id="goTeams"></div>
+    <div class="go-score" id="goScore">0 - 0</div>
+    <div class="go-rating" id="goRating"></div>
+    <div class="xp-box"><strong id="xpVal">+250 XP</strong>Added to your weekly total</div>
+    <div class="eth-box">⚡ ETH prize pools coming — top 3 weekly earners win real rewards on Base</div>
+    <button class="btn btn-blue" onclick="playAgain()">🔄 PLAY AGAIN</button>
+    <button class="btn btn-ghost" style="margin-top:8px" onclick="goSelect()">← CHANGE TEAMS</button>
+  </div>
+  <div class="lb">
+    <div class="lb-head">
+      <div class="lb-title">🏆 Weekly Leaderboard</div>
+      <div class="lb-badge">ETH REWARDS SOON</div>
+    </div>
+    <div id="lbRows"></div>
+  </div>
+</div>
+
+<!-- ── WALLET MODAL ── -->
+<div class="overlay" id="walletModal" onclick="if(event.target===this)closeWalletModal()">
+  <div class="modal">
+    <div class="modal-title">Connect Wallet</div>
+    <div class="modal-sub">Connect to save your scores and earn rewards on <strong style="color:var(--blue)">Base Mainnet</strong>.</div>
+    <div class="w-opt" onclick="connectWallet('metamask')">
+      <div class="w-ico" style="background:rgba(246,133,27,.12)">🦊</div>
+      <div><div class="w-name">MetaMask</div><div class="w-desc">Connect with MetaMask</div></div>
+    </div>
+    <div class="w-opt" onclick="connectWallet('coinbase')">
+      <div class="w-ico" style="background:rgba(0,82,255,.12)">🔵</div>
+      <div><div class="w-name">Coinbase Wallet</div><div class="w-desc">Connect with Coinbase Wallet</div></div>
+    </div>
+    <button class="btn-cancel" onclick="closeWalletModal()">Cancel</button>
+  </div>
+</div>
+
+<!-- ── TOAST ── -->
+<div class="toast" id="toast">
+  <span id="toastIco">✅</span>
+  <span id="toastMsg"></span>
+</div>
+
+<!-- ── MOBILE NAV ── -->
+<nav class="mob-nav">
+  <div class="mob-nav-inner">
+    <a href="index.html" class="mob-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+      Home
+    </a>
+    <a href="matches.html" class="mob-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Matches
+    </a>
+    <a href="penalty-shootout.html" class="mob-item active">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="m8 12 2.5 2.5L16 9"/></svg>
+      Penalty
+    </a>
+    <a href="earnings.html" class="mob-item">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      Earnings
+    </a>
+  </div>
+</nav>
+
 <script>
-  // GAME STATE
-  let totalKicks = 5;
-  let currentKick = 0;
-  let goals = 0;
-  let streak = 0;
-  let bestScore = 0;
-  let isAnimating = false;
-  let gameActive = true;
+// ════════════════════════════════════════
+// WALLET
+// ════════════════════════════════════════
+let walletAddress = null;
+let provider = null;
+let signer = null;
+const BASE_CHAIN_ID = '0x2105';
 
-  // Zone positions relative to goal (for ball & keeper animation)
-  const zonePositions = [
-    { x: '22%', y: '100px' },   // top-left
-    { x: '50%', y: '100px' },   // top-center
-    { x: '78%', y: '100px' },   // top-right
-    { x: '22%', y: '180px' },   // bottom-left
-    { x: '50%', y: '180px' },   // bottom-center
-    { x: '78%', y: '180px' },   // bottom-right
-  ];
+function openWalletModal() {
+  if (walletAddress) { showToast('Connected: ' + short(walletAddress)); return; }
+  document.getElementById('walletModal').classList.add('open');
+}
+function closeWalletModal() {
+  document.getElementById('walletModal').classList.remove('open');
+}
 
-  // Keeper save zones
-  const keeperPositions = {
-    left: '25%',
-    center: '50%',
-    right: '75%'
-  };
-
-  const zoneToSide = [0, 1, 2, 0, 1, 2]; // 0=left, 1=center, 2=right
-
-  function shoot(zoneIndex) {
-    if (isAnimating || !gameActive) return;
-    isAnimating = true;
-
-    // Disable zones
-    document.querySelectorAll('.zone').forEach(z => z.classList.remove('active-zone'));
-
-    const ball = document.getElementById('ball');
-    const keeper = document.getElementById('goalkeeper');
-    const overlay = document.getElementById('resultOverlay');
-    const resultText = document.getElementById('resultText');
-
-    // Keeper decision — save same side 40% of time
-    const playerSide = zoneToSide[zoneIndex];
-    let keeperSide;
-    const rand = Math.random();
-    if (rand < 0.4) keeperSide = playerSide; // keeper guesses right
-    else keeperSide = Math.floor(Math.random() * 3); // random
-
-    // Animate keeper
-    const keeperLeftMap = ['22%', '50%', '78%'];
-    keeper.style.left = keeperLeftMap[keeperSide];
-    keeper.style.transition = 'left 0.3s ease-out';
-
-    // Animate ball to goal
-    const stadium = document.getElementById('stadium');
-    const stadiumRect = stadium.getBoundingClientRect();
-    const goalLeft = (stadiumRect.width - 260) / 2; // goal starts here
-
-    const targetX = goalLeft + (260 * (zoneIndex % 3 === 0 ? 0.17 : zoneIndex % 3 === 1 ? 0.5 : 0.83));
-    const targetY = zoneIndex < 3 ? 110 : 160;
-
-    ball.style.transition = 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-    ball.style.left = targetX + 'px';
-    ball.style.bottom = 'auto';
-    ball.style.top = targetY + 'px';
-    ball.style.transform = 'translateX(0) scale(0.6)';
-
-    // Determine goal or save
-    const isGoal = keeperSide !== playerSide || Math.random() < 0.15;
-
-    setTimeout(() => {
-      overlay.classList.add('show');
-
-      if (isGoal) {
-        goals++;
-        streak++;
-        resultText.textContent = 'GOAL!';
-        resultText.className = 'result-text goal';
-        updateKickDot('scored');
-        spawnConfetti();
-      } else {
-        streak = 0;
-        resultText.textContent = 'SAVED!';
-        resultText.className = 'result-text miss';
-        updateKickDot('missed');
-        // Shake
-        stadium.style.animation = 'none';
-        setTimeout(() => {
-          stadium.style.transform = 'translateX(-6px)';
-          setTimeout(() => { stadium.style.transform = 'translateX(6px)'; }, 80);
-          setTimeout(() => { stadium.style.transform = 'translateX(0)'; }, 160);
-        }, 10);
-      }
-
-      // Update stats
-      document.getElementById('totalScore').textContent = goals;
-      document.getElementById('streak').textContent = streak;
-
-      currentKick++;
-
-      if (currentKick >= totalKicks) {
-        // Game over
-        setTimeout(() => {
-          overlay.classList.remove('show');
-          showGameOver();
-        }, 1200);
-      } else {
-        // Show next button
-        const btn = document.getElementById('actionBtn');
-        btn.disabled = false;
-        btn.textContent = `NEXT KICK (${totalKicks - currentKick} left) →`;
-      }
-
-    }, 500);
-  }
-
-  function updateKickDot(result) {
-    const dots = document.querySelectorAll('.kick-dot');
-    dots[currentKick].className = `kick-dot ${result}`;
-    dots[currentKick].textContent = result === 'scored' ? '✓' : '✗';
-    if (currentKick + 1 < totalKicks) {
-      dots[currentKick + 1].classList.add('active');
+async function connectWallet(type) {
+  closeWalletModal();
+  try {
+    let eth = window.ethereum;
+    if (!eth) { showToast('Install ' + (type==='metamask'?'MetaMask':'Coinbase Wallet') + ' first!', true); return; }
+    if (window.ethereum?.providers) {
+      const found = window.ethereum.providers.find(p => type==='coinbase' ? p.isCoinbaseWallet : p.isMetaMask);
+      if (found) eth = found;
     }
+    showToast('Connecting…');
+    const accounts = await eth.request({ method: 'eth_requestAccounts' });
+    walletAddress = accounts[0];
+    try {
+      await eth.request({ method:'wallet_switchEthereumChain', params:[{chainId:BASE_CHAIN_ID}] });
+    } catch(e) {
+      if (e.code===4902) {
+        await eth.request({ method:'wallet_addEthereumChain', params:[{
+          chainId:BASE_CHAIN_ID, chainName:'Base',
+          nativeCurrency:{name:'ETH',symbol:'ETH',decimals:18},
+          rpcUrls:['https://mainnet.base.org'],
+          blockExplorerUrls:['https://basescan.org'],
+        }]});
+      }
+    }
+    provider = new ethers.BrowserProvider(eth);
+    signer   = await provider.getSigner();
+    updateWalletUI();
+    showToast('✅ Connected to Base Mainnet!');
+    loadCheckinState();
+  } catch(e) {
+    if (e.code===4001) showToast('Cancelled', true);
+    else showToast('Failed: ' + (e.message?.slice(0,50)||'Error'), true);
   }
+}
 
-  function nextKick() {
-    if (currentKick >= totalKicks) return;
+function updateWalletUI() {
+  const btn  = document.getElementById('walletBtn');
+  const text = document.getElementById('walletText');
+  if (walletAddress) {
+    btn.classList.add('connected');
+    text.textContent = short(walletAddress);
+  } else {
+    btn.classList.remove('connected');
+    text.textContent = 'Connect';
+  }
+}
 
-    const btn = document.getElementById('actionBtn');
+function short(a) { return a ? a.slice(0,6)+'…'+a.slice(-4) : ''; }
+
+// ════════════════════════════════════════
+// DAILY CHECK-IN
+// ════════════════════════════════════════
+let checkInStreak = 0;
+let lastCheckIn   = null;
+
+function loadCheckinState() {
+  const key    = walletAddress ? `bf_checkin_${walletAddress}` : 'bf_checkin_guest';
+  const saved  = localStorage.getItem(key);
+  if (saved) {
+    const data  = JSON.parse(saved);
+    checkInStreak = data.streak || 0;
+    lastCheckIn   = data.lastDate ? new Date(data.lastDate) : null;
+  }
+  updateCheckinUI();
+}
+
+function updateCheckinUI() {
+  const streak = document.getElementById('streakDisplay');
+  const btn    = document.getElementById('checkinBtn');
+
+  streak.textContent = `🔥 ${checkInStreak} day streak`;
+
+  const today = new Date().toDateString();
+  const alreadyDone = lastCheckIn && new Date(lastCheckIn).toDateString() === today;
+
+  if (alreadyDone) {
+    btn.textContent = '✅ Done!';
+    btn.classList.add('done');
     btn.disabled = true;
-    btn.textContent = 'TAP THE GOAL TO SHOOT';
-
-    // Reset ball
-    const ball = document.getElementById('ball');
-    ball.style.transition = 'none';
-    ball.style.left = '50%';
-    ball.style.top = 'auto';
-    ball.style.bottom = '52px';
-    ball.style.transform = 'translateX(-50%)';
-
-    // Reset keeper
-    const keeper = document.getElementById('goalkeeper');
-    keeper.style.left = '50%';
-    keeper.style.transform = 'translateX(-50%)';
-
-    // Hide overlay
-    document.getElementById('resultOverlay').classList.remove('show');
-
-    // Re-enable zones
-    document.querySelectorAll('.zone').forEach(z => z.classList.add('active-zone'));
-
-    isAnimating = false;
-  }
-
-  function showGameOver() {
-    gameActive = false;
-    document.getElementById('stadium').style.display = 'none';
-    document.getElementById('kicksRow').style.display = 'none';
-    document.getElementById('instruction').style.display = 'none';
-
-    const gameOver = document.getElementById('gameOver');
-    gameOver.classList.add('show');
-
-    document.getElementById('finalScore').textContent = `${goals}/5`;
-
-    // Best score
-    if (goals > bestScore) {
-      bestScore = goals;
-      document.getElementById('bestScore').textContent = bestScore;
-    }
-
-    // Rating
-    const ratings = [
-      { min: 5, emoji: '🏆', text: 'WORLD CLASS! Perfect game!' },
-      { min: 4, emoji: '⭐', text: 'Brilliant! Striker quality!' },
-      { min: 3, emoji: '👍', text: 'Solid! Keep it up!' },
-      { min: 2, emoji: '💪', text: 'Not bad! Try again!' },
-      { min: 0, emoji: '😅', text: 'Keep practicing! You got this!' },
-    ];
-
-    const rating = ratings.find(r => goals >= r.min);
-    document.getElementById('ratingEmoji').textContent = rating.emoji;
-    document.getElementById('ratingText').textContent = rating.text;
-
-    // Change button to play again
-    const btn = document.getElementById('actionBtn');
+  } else {
+    btn.textContent = 'CHECK IN';
+    btn.classList.remove('done');
     btn.disabled = false;
-    btn.textContent = '🔄 PLAY AGAIN';
-    btn.onclick = resetGame;
+  }
+}
+
+function doCheckin() {
+  const today     = new Date();
+  const todayStr  = today.toDateString();
+  const alreadyDone = lastCheckIn && new Date(lastCheckIn).toDateString() === todayStr;
+  if (alreadyDone) return;
+
+  // Check if yesterday was checked in (for streak continuity)
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const wasYesterday = lastCheckIn && new Date(lastCheckIn).toDateString() === yesterday.toDateString();
+
+  if (wasYesterday || !lastCheckIn) {
+    checkInStreak++;
+  } else {
+    checkInStreak = 1; // reset streak
   }
 
-  function resetGame() {
-    currentKick = 0;
-    goals = 0;
-    streak = 0;
-    isAnimating = false;
-    gameActive = true;
+  lastCheckIn = today;
 
-    // Reset dots
-    const dots = document.querySelectorAll('.kick-dot');
-    dots.forEach((d, i) => {
-      d.className = `kick-dot${i === 0 ? ' active' : ''}`;
-      d.textContent = '⚽';
+  const key = walletAddress ? `bf_checkin_${walletAddress}` : 'bf_checkin_guest';
+  localStorage.setItem(key, JSON.stringify({
+    streak:   checkInStreak,
+    lastDate: today.toISOString(),
+  }));
+
+  updateCheckinUI();
+
+  // XP message
+  const xp = checkInStreak >= 7 ? 100 : checkInStreak >= 3 ? 50 : 25;
+  showToast(`✅ Checked in! Day ${checkInStreak} streak — +${xp} XP`);
+
+  // Confetti burst on milestone streaks
+  if (checkInStreak % 7 === 0) spawnConfetti(30);
+}
+
+// ════════════════════════════════════════
+// TEAMS
+// ════════════════════════════════════════
+const TEAMS = [
+  {id:'base', name:'Base FC',        e:'🔵', c:'#0052FF', lg:'L2 Premier League',    r:94, gk:'🧤', def:0.42},
+  {id:'btc',  name:'Bitcoin United', e:'🟠', c:'#F7931A', lg:'OG Blockchain League', r:96, gk:'🥊', def:0.52},
+  {id:'eth',  name:'Ethereum City',  e:'💎', c:'#627EEA', lg:'Smart Contract Cup',   r:93, gk:'🛡️', def:0.44},
+  {id:'sol',  name:'Solana SC',      e:'🟣', c:'#9945FF', lg:'Speed League',          r:91, gk:'⚡', def:0.36},
+  {id:'pol',  name:'Polygon FC',     e:'🔷', c:'#8247E5', lg:'Scaling Division',      r:88, gk:'🔷', def:0.4},
+  {id:'avax', name:'Avalanche FC',   e:'🔺', c:'#E84142', lg:'Subnets League',        r:89, gk:'🌋', def:0.45},
+  {id:'link', name:'Chainlink XI',   e:'🔗', c:'#2A5ADA', lg:'Oracle Premier',        r:87, gk:'🔗', def:0.38},
+  {id:'arb',  name:'Arbitrum AFC',   e:'🌀', c:'#28A0F0', lg:'L2 Champions',          r:88, gk:'🌀', def:0.39},
+  {id:'op',   name:'Optimism FC',    e:'❤️', c:'#FF0420', lg:'Optimist League',       r:86, gk:'❤️', def:0.37},
+  {id:'bnb',  name:'BNB Chain FC',   e:'🟡', c:'#F3BA2F', lg:'Binance Division',      r:90, gk:'👑', def:0.46},
+];
+
+// ════════════════════════════════════════
+// GAME STATE
+// ════════════════════════════════════════
+let myT=null,opT=null;
+let rounds=5,cur=0,myG=0,opG=0;
+let animating=false,sndOn=true,phase='shoot';
+let roundLog=[];
+let aCtx=null;
+
+// ════════════════════════════════════════
+// AUDIO
+// ════════════════════════════════════════
+function ac(){if(!aCtx)aCtx=new(window.AudioContext||window.webkitAudioContext)();return aCtx;}
+function tone(f,t,d,v=0.4,dl=0){
+  if(!sndOn)return;
+  try{const c=ac(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);o.type=t;o.frequency.value=f;
+  g.gain.setValueAtTime(0,c.currentTime+dl);
+  g.gain.linearRampToValueAtTime(v,c.currentTime+dl+0.02);
+  g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+dl+d);
+  o.start(c.currentTime+dl);o.stop(c.currentTime+dl+d);}catch(e){}}
+function sfxKick(){tone(80,'sine',0.1,0.6);tone(130,'square',0.07,0.3,0.02);}
+function sfxGoal(){[523,659,784,1047].forEach((f,i)=>tone(f,'sine',0.3,0.5,i*0.1));setTimeout(()=>[784,1047,1319].forEach((f,i)=>tone(f,'triangle',0.25,0.4,i*0.08)),500);}
+function sfxSave(){tone(200,'sawtooth',0.12,0.5);tone(150,'square',0.1,0.4,0.1);}
+function sfxMiss(){tone(180,'sine',0.09,0.3);tone(130,'sine',0.09,0.3,0.12);}
+function sfxWhistle(){
+  try{const c=ac(),o=c.createOscillator(),g=c.createGain();
+  o.connect(g);g.connect(c.destination);o.type='sine';
+  o.frequency.setValueAtTime(1200,c.currentTime);
+  o.frequency.linearRampToValueAtTime(1400,c.currentTime+0.1);
+  o.frequency.linearRampToValueAtTime(1100,c.currentTime+0.25);
+  g.gain.setValueAtTime(0.5,c.currentTime);
+  g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.35);
+  o.start();o.stop(c.currentTime+0.35);}catch(e){}}
+function toggleSnd(){sndOn=!sndOn;document.getElementById('sndBtn').textContent=sndOn?'🔊':'🔇';}
+
+// ════════════════════════════════════════
+// TEAM GRIDS
+// ════════════════════════════════════════
+function buildGrids(){
+  ['myGrid','oppGrid'].forEach((id,si)=>{
+    const g=document.getElementById(id);g.innerHTML='';
+    TEAMS.forEach(t=>{
+      const d=document.createElement('div');d.className='team-card';d.id=(si?'op':'my')+'-'+t.id;
+      d.style.borderColor='rgba(255,255,255,0.07)';
+      d.innerHTML=`<div class="tc-emoji">${t.e}</div><div class="tc-name" style="color:${t.c}">${t.name}</div><div class="tc-league">${t.lg}</div><div class="tc-rating" style="color:${t.c}">⭐ ${t.r} OVR</div>`;
+      d.onclick=()=>pick(t,si?'op':'my');
+      g.appendChild(d);
     });
+  });
+}
 
-    // Reset ball
-    const ball = document.getElementById('ball');
-    ball.style.transition = 'none';
-    ball.style.left = '50%';
-    ball.style.top = 'auto';
-    ball.style.bottom = '52px';
-    ball.style.transform = 'translateX(-50%)';
+function pick(t,side){
+  document.querySelectorAll(`#${side==='my'?'my':'opp'}Grid .team-card`).forEach(c=>{
+    c.style.borderColor='rgba(255,255,255,0.07)';c.style.background='var(--mid)';
+    const b=c.querySelector('.tc-badge');if(b)b.remove();
+  });
+  const card=document.getElementById(side+'-'+t.id);
+  card.style.borderColor=t.c;card.style.background=t.c+'15';
+  const b=document.createElement('div');b.className='tc-badge';b.style.background=t.c;
+  b.textContent=side==='my'?'YOU':'OPP';card.appendChild(b);
+  if(side==='my')myT=t;else opT=t;
+  canStart();tone(440,'sine',0.1,0.3);
+}
 
-    // Reset keeper
-    const keeper = document.getElementById('goalkeeper');
-    keeper.style.left = '50%';
-    keeper.style.transform = 'translateX(-50%)';
+function canStart(){
+  document.getElementById('startBtn').disabled=!(myT&&opT&&myT.id!==opT.id);
+}
 
-    // Show stadium
-    document.getElementById('stadium').style.display = 'block';
-    document.getElementById('kicksRow').style.display = 'flex';
-    document.getElementById('instruction').style.display = 'block';
-    document.getElementById('resultOverlay').classList.remove('show');
-    document.getElementById('gameOver').classList.remove('show');
+function rndPick(){
+  const a=TEAMS[Math.floor(Math.random()*TEAMS.length)];
+  let b=TEAMS[Math.floor(Math.random()*TEAMS.length)];
+  while(b.id===a.id)b=TEAMS[Math.floor(Math.random()*TEAMS.length)];
+  pick(a,'my');pick(b,'op');
+  showToast(`${a.e} ${a.name} vs ${b.e} ${b.name}`);
+}
 
-    // Re-enable zones
-    document.querySelectorAll('.zone').forEach(z => z.classList.add('active-zone'));
-
-    // Reset button
-    const btn = document.getElementById('actionBtn');
-    btn.disabled = true;
-    btn.textContent = 'NEXT KICK →';
-    btn.onclick = nextKick;
-
-    // Update stats display
-    document.getElementById('totalScore').textContent = 0;
-    document.getElementById('streak').textContent = 0;
+// ════════════════════════════════════════
+// GAME LOGIC
+// ════════════════════════════════════════
+function startGame(){
+  if(!myT||!opT)return;
+  if(!walletAddress){
+    showToast('Connect wallet to play and save scores!', true);
   }
+  cur=0;myG=0;opG=0;animating=false;phase='shoot';roundLog=[];
+  showScreen('scnGame');
+  sfxWhistle();
 
-  function spawnConfetti() {
-    const container = document.getElementById('confettiContainer');
-    const colors = ['#0052FF', '#FFD700', '#00e676', '#ffffff', '#ff6b6b'];
+  // Set team info
+  ['tbME','sbME'].forEach(id=>document.getElementById(id).textContent=myT.e);
+  ['tbOE','sbOE'].forEach(id=>document.getElementById(id).textContent=opT.e);
+  ['tbMN','sbMN'].forEach(id=>document.getElementById(id).textContent=myT.name);
+  ['tbON','sbON'].forEach(id=>document.getElementById(id).textContent=opT.name);
+  document.getElementById('flL').textContent=myT.e;
+  document.getElementById('flR').textContent=opT.e;
 
-    for (let i = 0; i < 40; i++) {
-      const piece = document.createElement('div');
-      piece.className = 'confetti-piece';
-      piece.style.left = Math.random() * 100 + 'vw';
-      piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-      piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '0';
-      piece.style.animationDuration = (Math.random() * 1.5 + 0.8) + 's';
-      piece.style.animationDelay = Math.random() * 0.4 + 's';
-      container.appendChild(piece);
-      setTimeout(() => piece.remove(), 2500);
+  buildKickRow();
+  setShootPhase();
+}
+
+function buildKickRow(){
+  const row=document.getElementById('kRow');row.innerHTML='';
+  for(let i=0;i<rounds;i++){
+    const d=document.createElement('div');d.className='kd'+(i===0?' active':'');
+    d.id='kd'+i;d.textContent='⚽';row.appendChild(d);
+  }
+}
+
+function setShootPhase(){
+  phase='shoot';
+  document.getElementById('gk').textContent=opT.gk;
+  document.getElementById('gk').style.left='50%';
+  document.getElementById('gk').style.transform='translateX(-50%)';
+  document.getElementById('ball').style.cssText='position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:20px;z-index:20;';
+  document.getElementById('resOv').classList.remove('show');
+  const pp=document.getElementById('phasePill');
+  pp.className='phase-pill';pp.textContent='⚽ Your turn to SHOOT';
+  document.getElementById('turnPill').className='turn-pill turn-shoot';
+  document.getElementById('turnPill').textContent='SHOOT';
+  document.getElementById('instr').innerHTML='<span>Tap a zone</span> in the goal to shoot!';
+  document.getElementById('actBtn').disabled=true;
+  document.getElementById('actBtn').textContent='TAP THE GOAL ↑';
+  const zones=document.getElementById('gZones');
+  zones.querySelectorAll('.zone').forEach(z=>{z.className='zone sh';z.onclick=()=>doShoot(parseInt(z.dataset.z));});
+  animating=false;
+}
+
+function setSavePhase(){
+  phase='save';
+  document.getElementById('gk').textContent=myT.gk;
+  document.getElementById('gk').style.left='50%';
+  document.getElementById('gk').style.transform='translateX(-50%)';
+  document.getElementById('ball').style.cssText='position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:20px;z-index:20;';
+  document.getElementById('resOv').classList.remove('show');
+  const pp=document.getElementById('phasePill');
+  pp.className='phase-pill save-mode';pp.textContent='🧤 AI is shooting — SAVE it!';
+  document.getElementById('turnPill').className='turn-pill turn-save';
+  document.getElementById('turnPill').textContent='SAVE';
+  document.getElementById('instr').innerHTML='<span class="orange">Pick a zone</span> to dive and save the shot!';
+  document.getElementById('actBtn').disabled=true;
+  document.getElementById('actBtn').textContent='PICK WHERE TO DIVE ↑';
+  const zones=document.getElementById('gZones');
+  zones.querySelectorAll('.zone').forEach(z=>{z.className='zone sv';z.onclick=()=>doSave(parseInt(z.dataset.z));});
+  animating=false;
+}
+
+// Zone X positions for goal (goal width ~220px, stadium width varies)
+const zoneX=['20%','50%','80%','20%','50%','80%'];
+const zoneY=['78px','78px','78px','130px','130px','130px'];
+
+function doShoot(z){
+  if(animating||phase!=='shoot')return;
+  animating=true;
+  sfxKick();
+  setZonesOff();
+
+  const ball=document.getElementById('ball');
+  const stad=document.getElementById('stad');
+  const gk=document.getElementById('gk');
+  const goalLeft=(stad.offsetWidth-220)/2;
+
+  // Ball target
+  const bx=goalLeft+(220*[0.18,0.5,0.82,0.18,0.5,0.82][z]);
+  const by=[85,85,85,130,130,130][z];
+  ball.classList.add('fly');
+  ball.style.left=bx+'px';
+  ball.style.bottom='auto';
+  ball.style.top=by+'px';
+  ball.style.transform='translateX(0) scale(0.6)';
+
+  // AI saves
+  const side=z%3;
+  const aiSide=Math.random()<(opT.def+0.1)?side:Math.floor(Math.random()*3);
+  const gkLeft=['20%','50%','80%'][aiSide];
+  gk.style.left=gkLeft;
+  gk.style.transform='translateX(-50%)';
+
+  setTimeout(()=>{
+    const saved=aiSide===side&&Math.random()>0.18;
+    showResult(saved?'SAVED!':'GOAL!', saved?'m':'g');
+    if(!saved){myG++;sfxGoal();spawnConfetti(25);}else{sfxSave();}
+    updateScore();
+    roundLog.push({myShot:z,aiSave:aiSide,myScored:!saved});
+    setTimeout(()=>nextPhase(),1100);
+  },500);
+}
+
+function doSave(z){
+  if(animating||phase!=='save')return;
+  animating=true;
+  setZonesOff();
+
+  const ball=document.getElementById('ball');
+  const stad=document.getElementById('stad');
+  const gk=document.getElementById('gk');
+  const goalLeft=(stad.offsetWidth-220)/2;
+
+  // AI shoots random zone
+  const aiZ=Math.floor(Math.random()*6);
+  const bx=goalLeft+(220*[0.18,0.5,0.82,0.18,0.5,0.82][aiZ]);
+  const by=[85,85,85,130,130,130][aiZ];
+
+  sfxKick();
+  ball.classList.add('fly');
+  ball.style.left=bx+'px';
+  ball.style.bottom='auto';
+  ball.style.top=by+'px';
+  ball.style.transform='translateX(0) scale(0.6)';
+
+  // Player dives
+  const gkLeft=['20%','50%','80%'][z%3];
+  gk.style.left=gkLeft;
+  gk.style.transform='translateX(-50%)';
+
+  setTimeout(()=>{
+    const saved=z%3===aiZ%3&&Math.random()>0.15;
+    if(saved){showResult('SAVED!','sv-c');sfxSave();}
+    else{showResult('GOAL!','sc-c');opG++;sfxMiss();}
+    updateScore();
+    roundLog.push({aiShot:aiZ,mySave:z,aiScored:!saved});
+    setTimeout(()=>nextPhase(),1100);
+  },500);
+}
+
+function setZonesOff(){
+  document.getElementById('gZones').querySelectorAll('.zone').forEach(z=>{z.className='zone off';z.onclick=null;});
+}
+
+function showResult(txt,cls){
+  const ov=document.getElementById('resOv');
+  const rt=document.getElementById('resTxt');
+  rt.textContent=txt;rt.className='res-txt '+cls;
+  ov.classList.add('show');
+}
+
+function updateScore(){
+  document.getElementById('sbMS').textContent=myG;
+  document.getElementById('sbOS').textContent=opG;
+}
+
+function nextPhase(){
+  document.getElementById('resOv').classList.remove('show');
+  ball_reset();
+
+  if(phase==='shoot'){
+    // Now AI shoots, I save
+    setSavePhase();
+  } else {
+    // Round complete
+    const kdEl=document.getElementById('kd'+cur);
+    if(kdEl){
+      const myScored=roundLog[roundLog.length-2]?.myScored;
+      kdEl.className='kd '+(myScored?'scored':'missed');
+      kdEl.textContent=myScored?'✓':'✗';
+    }
+    cur++;
+    if(cur>=rounds){
+      setTimeout(showGameOver,400);
+    } else {
+      const next=document.getElementById('kd'+cur);
+      if(next)next.classList.add('active');
+      setShootPhase();
     }
   }
+}
 
-  // Init
-  document.getElementById('actionBtn').textContent = 'TAP THE GOAL TO SHOOT';
+function ball_reset(){
+  const b=document.getElementById('ball');
+  b.classList.remove('fly');
+  b.style.cssText='position:absolute;bottom:34px;left:50%;transform:translateX(-50%);font-size:20px;z-index:20;';
+}
+
+function showGameOver(){
+  sfxWhistle();
+  showScreen('scnOver');
+
+  const win=myG>opG,draw=myG===opG;
+  document.getElementById('goTrophy').textContent=win?'🏆':draw?'🤝':'😔';
+  document.getElementById('goResult').textContent=win?'YOU WIN!':draw?'IT\'S A DRAW!':'YOU LOSE!';
+  document.getElementById('goTeams').textContent=`${myT.e} ${myT.name}  vs  ${opT.e} ${opT.name}`;
+  document.getElementById('goScore').textContent=`${myG} - ${opG}`;
+
+  const pct=Math.round((myG/rounds)*100);
+  const ratings=[
+    {min:100,e:'🏆',t:'WORLD CLASS! Perfect game!'},
+    {min:80,e:'⭐',t:'Striker quality! Brilliant!'},
+    {min:60,e:'👍',t:'Solid performance!'},
+    {min:40,e:'💪',t:'Keep practicing!'},
+    {min:0,e:'😅',t:'Better luck next time!'},
+  ];
+  const r=ratings.find(x=>pct>=x.min);
+  document.getElementById('goRating').textContent=r.e+' '+r.t;
+
+  const xp=win?250:draw?150:75;
+  document.getElementById('xpVal').textContent=`+${xp} XP`;
+
+  // Save score
+  saveScore(myG,win);
+  buildLeaderboard();
+}
+
+function saveScore(g,win){
+  const key='bf_penalty_scores';
+  const scores=JSON.parse(localStorage.getItem(key)||'[]');
+  scores.unshift({
+    name: walletAddress?short(walletAddress):'Guest',
+    team: myT.name,
+    score:g,
+    wins: win?1:0,
+    date: new Date().toISOString(),
+  });
+  localStorage.setItem(key,JSON.stringify(scores.slice(0,20)));
+}
+
+function buildLeaderboard(){
+  const key='bf_penalty_scores';
+  const scores=JSON.parse(localStorage.getItem(key)||'[]');
+  const sample=[
+    {name:'0xVictor_J',team:'Base FC',score:5,wins:3},
+    {name:'0xBarcaVision',team:'ETH City',score:4,wins:2},
+    {name:'0xKlopp_era',team:'BTC United',score:4,wins:2},
+  ];
+  const all=[...scores,...sample].sort((a,b)=>b.score-a.score).slice(0,5);
+  const ranks=['r1','r2','r3','',''];
+  const rankIcons=['🥇','🥈','🥉','4','5'];
+  document.getElementById('lbRows').innerHTML=all.map((s,i)=>`
+    <div class="lb-row">
+      <div class="lb-rank ${ranks[i]||''}">${rankIcons[i]}</div>
+      <div class="lb-av" style="background:var(--blue)">${(s.name||'?').slice(0,2).toUpperCase()}</div>
+      <div class="lb-info"><div class="lb-name">${s.name}</div><div class="lb-team">${s.team||''}</div></div>
+      <div class="lb-pts-col"><div class="lb-pts">${s.score}/5</div><div class="lb-wins">${s.wins||0} wins</div></div>
+    </div>`).join('');
+}
+
+function playAgain(){myT=myT;opT=opT;startGame();}
+function goSelect(){showScreen('scnSelect');}
+
+function showScreen(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ════════════════════════════════════════
+// CONFETTI
+// ════════════════════════════════════════
+function spawnConfetti(count=40){
+  const wrap=document.getElementById('cfWrap');
+  const cols=['#0052FF','#FFD700','#00e676','#ffffff','#ff6b6b','#FF9500'];
+  for(let i=0;i<count;i++){
+    const p=document.createElement('div');p.className='cp';
+    p.style.cssText=`left:${Math.random()*100}vw;background:${cols[Math.floor(Math.random()*cols.length)]};border-radius:${Math.random()>.5?'50%':'0'};animation-duration:${Math.random()*1.5+0.8}s;animation-delay:${Math.random()*0.4}s;`;
+    wrap.appendChild(p);
+    setTimeout(()=>p.remove(),2500);
+  }
+}
+
+// ════════════════════════════════════════
+// TOAST
+// ════════════════════════════════════════
+let _tt;
+function showToast(msg,isErr=false){
+  clearTimeout(_tt);
+  const el=document.getElementById('toast');
+  document.getElementById('toastIco').textContent=isErr?'❌':'✅';
+  document.getElementById('toastMsg').textContent=msg;
+  el.classList.toggle('err',isErr);
+  el.classList.add('show');
+  _tt=setTimeout(()=>el.classList.remove('show'),4000);
+}
+
+// ════════════════════════════════════════
+// INIT
+// ════════════════════════════════════════
+buildGrids();
+loadCheckinState();
 </script>
 </body>
 </html>
